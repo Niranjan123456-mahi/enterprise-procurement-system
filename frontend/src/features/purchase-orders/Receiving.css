@@ -1,0 +1,57 @@
+.recv-page {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.recv-page h1 {
+  font-size: 26px;
+  margin-bottom: 4px;
+}
+
+.recv-subtext {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.recv-table-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.recv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.recv-table th {
+  text-align: left;
+  padding: 12px 14px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.recv-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.recv-clickable-row {
+  cursor: pointer;
+}
+
+.recv-clickable-row:hover {
+  background-color: #f9fafb;
+}
+
+.recv-empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 24px !important;
+}

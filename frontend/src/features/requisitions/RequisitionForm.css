@@ -1,0 +1,127 @@
+.req-page {
+  max-width: 720px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.req-page h1 {
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.req-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.req-card h2 {
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+.req-card label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.req-card input,
+.req-card textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.req-row {
+  display: flex;
+  gap: 16px;
+}
+
+.req-col {
+  flex: 1;
+}
+
+/* line items */
+.req-line-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.req-add-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.req-line {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.req-remove-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #dc2626;
+}
+
+.req-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 16px;
+  padding-top: 14px;
+  font-size: 15px;
+}
+
+.req-total strong {
+  font-size: 20px;
+}
+
+/* buttons at the bottom */
+.req-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.req-btn-outline {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.req-btn-primary {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.req-btn-primary:hover {
+  background-color: #1d4ed8;
+}

@@ -1,122 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+import LandingPage from "./features/landing/LandingPage";
+import Login from "./features/auth/Login";
+import Dashboard from "./features/dashboard/Dashboard";
+import RequisitionForm from "./features/requisitions/RequisitionForm";
+import MyRequests from "./features/requisitions/MyRequests";
+import ApprovalDashboard from "./features/requisitions/ApprovalDashboard";
+import POTracker from "./features/purchase-orders/POTracker";
+import Receiving from "./features/purchase-orders/Receiving";
+import SupplierAdmin from "./features/masterdata/SupplierAdmin";
+import ApprovalRuleAdmin from "./features/masterdata/ApprovalRuleAdmin";
+import Catalog from "./features/masterdata/Catalog";
+import RoleAdmin from "./features/masterdata/RoleAdmin";
+import ReportsDashboard from "./features/analytics/ReportsDashboard";
+import Sidebar from "./components/Sidebar";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState(null);
+  const [activePage, setActivePage] = useState("dashboard");
+  const [showLogin, setShowLogin] = useState(false);
+
+  // show the marketing landing page first, before any login
+  if (user === null && !showLogin) {
+    return <LandingPage onSignIn={() => setShowLogin(true)} />;
+  }
+
+  if (user === null) {
+    return <Login onLogin={setUser} />;
+  }
+
+  function handleLogout() {
+    setUser(null);
+    setShowLogin(false);
+    setActivePage("dashboard");
+  }
+
+  let navItems = [{ key: "dashboard", label: "Dashboard", icon: "📊" }];
+
+  if (user.role === "Requester") {
+    navItems.push(
+      { key: "requisition", label: "New Request", icon: "📝" },
+      { key: "myrequests", label: "My Requests", icon: "📋" }
+    );
+  }
+
+  if (user.role === "Approver" || user.role === "Admin") {
+    navItems.push({ key: "approvals", label: "Approvals", icon: "✅" });
+  }
+
+  if (user.role === "Approver" || user.role === "Admin" || user.role === "Receiver") {
+    navItems.push({ key: "orders", label: "Purchase Orders", icon: "📦" });
+  }
+
+  if (user.role === "Receiver" || user.role === "Admin") {
+    navItems.push({ key: "receiving", label: "Receiving", icon: "🚚" });
+  }
+
+  if (user.role === "Admin") {
+    navItems.push(
+      { key: "suppliers", label: "Suppliers", icon: "🏢" },
+      { key: "rules", label: "Approval Rules", icon: "⚖️" },
+      { key: "catalog", label: "Catalog", icon: "📚" },
+      { key: "reports", label: "Reports", icon: "📈" },
+      { key: "roleadmin", label: "Manage Roles", icon: "👥" }
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div>
+      <Sidebar
+        user={user}
+        navItems={navItems}
+        activePage={activePage}
+        onSelect={setActivePage}
+        onLogout={handleLogout}
+      />
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <div className="app-content">
+        {activePage === "dashboard" && (
+          <Dashboard user={user} onNavigate={setActivePage} />
+        )}
+        {activePage === "requisition" && <RequisitionForm />}
+        {activePage === "myrequests" && <MyRequests />}
+        {activePage === "approvals" && <ApprovalDashboard />}
+        {activePage === "orders" && <POTracker />}
+        {activePage === "receiving" && <Receiving />}
+        {activePage === "suppliers" && <SupplierAdmin />}
+        {activePage === "rules" && <ApprovalRuleAdmin />}
+        {activePage === "catalog" && <Catalog />}
+        {activePage === "reports" && <ReportsDashboard />}
+        {activePage === "roleadmin" && <RoleAdmin />}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;

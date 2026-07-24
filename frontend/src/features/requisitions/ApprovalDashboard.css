@@ -1,0 +1,103 @@
+.approval-page {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.approval-page h1 {
+  font-size: 26px;
+  margin-bottom: 4px;
+}
+
+.approval-subtext {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.approval-table-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.approval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.approval-table th {
+  text-align: left;
+  padding: 12px 14px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.approval-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.approval-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* status badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* action buttons */
+.approve-btn,
+.reject-btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.approve-btn {
+  background-color: #16a34a;
+  color: white;
+}
+
+.approve-btn:hover {
+  background-color: #15803d;
+}
+
+.reject-btn {
+  background-color: #dc2626;
+  color: white;
+}
+
+.reject-btn:hover {
+  background-color: #b91c1c;
+}
+
+.no-action {
+  color: #9ca3af;
+}
