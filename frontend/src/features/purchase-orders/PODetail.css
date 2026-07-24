@@ -1,0 +1,133 @@
+.pod-page {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.pod-back-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.pod-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.pod-header h1 {
+  font-size: 24px;
+  margin: 0 0 4px 0;
+}
+
+.pod-subtext {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.pod-total {
+  text-align: right;
+}
+
+.pod-total span {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pod-total strong {
+  font-size: 22px;
+}
+
+.pod-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.pod-card h2 {
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+.pod-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pod-table th {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.pod-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.pod-receive-box {
+  display: flex;
+  gap: 6px;
+}
+
+.pod-receive-box input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.pod-receive-box button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pod-complete {
+  color: #16a34a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pod-empty {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.pod-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pod-history li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f1f3;
+  font-size: 14px;
+}
+
+.pod-history li:last-child {
+  border-bottom: none;
+}
+
+.pod-history-date {
+  color: #9ca3af;
+}
