@@ -31,10 +31,10 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.approval_rule_approvers (
-    rule_approver_id integer NOT NULL,
-    rule_id integer NOT NULL,
+    rule_approver_id bigint NOT NULL,
+    rule_id bigint NOT NULL,
     sequence_no integer NOT NULL,
-    role_id integer NOT NULL,
+    role_id bigint NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -47,7 +47,7 @@ ALTER TABLE public.approval_rule_approvers OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.approval_rule_approvers_rule_approver_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -72,9 +72,9 @@ ALTER SEQUENCE public.approval_rule_approvers_rule_approver_id_seq OWNED BY publ
 --
 
 CREATE TABLE public.approval_rules (
-    rule_id integer NOT NULL,
-    department_id integer NOT NULL,
-    category_id integer NOT NULL,
+    rule_id bigint NOT NULL,
+    department_id bigint NOT NULL,
+    category_id bigint NOT NULL,
     min_amount numeric(12,2) NOT NULL,
     max_amount numeric(12,2) NOT NULL,
     is_active boolean DEFAULT true,
@@ -90,7 +90,7 @@ ALTER TABLE public.approval_rules OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.approval_rules_rule_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -115,12 +115,12 @@ ALTER SEQUENCE public.approval_rules_rule_id_seq OWNED BY public.approval_rules.
 --
 
 CREATE TABLE public.audit_logs (
-    audit_id integer NOT NULL,
-    user_id integer,
+    audit_id bigint NOT NULL,
+    user_id bigint,
     module character varying(100),
     action character varying(100),
     entity_name character varying(100),
-    entity_id integer,
+    entity_id bigint,
     remarks text,
     action_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -134,7 +134,7 @@ ALTER TABLE public.audit_logs OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.audit_logs_audit_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -159,7 +159,7 @@ ALTER SEQUENCE public.audit_logs_audit_id_seq OWNED BY public.audit_logs.audit_i
 --
 
 CREATE TABLE public.categories (
-    category_id integer NOT NULL,
+    category_id bigint NOT NULL,
     category_code character varying(20) NOT NULL,
     category_name character varying(100) NOT NULL,
     description text,
@@ -176,7 +176,7 @@ ALTER TABLE public.categories OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.categories_category_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -201,7 +201,7 @@ ALTER SEQUENCE public.categories_category_id_seq OWNED BY public.categories.cate
 --
 
 CREATE TABLE public.cost_centers (
-    cost_center_id integer NOT NULL,
+    cost_center_id bigint NOT NULL,
     cost_center_code character varying(20) NOT NULL,
     cost_center_name character varying(100) NOT NULL,
     description text,
@@ -218,7 +218,7 @@ ALTER TABLE public.cost_centers OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.cost_centers_cost_center_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -243,8 +243,8 @@ ALTER SEQUENCE public.cost_centers_cost_center_id_seq OWNED BY public.cost_cente
 --
 
 CREATE TABLE public.departments (
-    department_id integer NOT NULL,
-    cost_center_id integer NOT NULL,
+    department_id bigint NOT NULL,
+    cost_center_id bigint NOT NULL,
     department_code character varying(20) NOT NULL,
     department_name character varying(100) NOT NULL,
     description text,
@@ -261,7 +261,7 @@ ALTER TABLE public.departments OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.departments_department_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -286,8 +286,8 @@ ALTER SEQUENCE public.departments_department_id_seq OWNED BY public.departments.
 --
 
 CREATE TABLE public.po_line_items (
-    po_line_item_id integer NOT NULL,
-    po_id integer NOT NULL,
+    po_line_item_id bigint NOT NULL,
+    po_id bigint NOT NULL,
     description text,
     ordered_qty integer,
     received_qty integer DEFAULT 0,
@@ -303,7 +303,7 @@ ALTER TABLE public.po_line_items OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.po_line_items_po_line_item_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -328,12 +328,12 @@ ALTER SEQUENCE public.po_line_items_po_line_item_id_seq OWNED BY public.po_line_
 --
 
 CREATE TABLE public.po_receipts (
-    receipt_id integer NOT NULL,
-    po_id integer NOT NULL,
+    receipt_id bigint NOT NULL,
+    po_id bigint NOT NULL,
     description text,
     qty_received integer,
     received_date date,
-    received_by integer
+    received_by bigint
 );
 
 
@@ -345,7 +345,7 @@ ALTER TABLE public.po_receipts OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.po_receipts_receipt_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -370,10 +370,10 @@ ALTER SEQUENCE public.po_receipts_receipt_id_seq OWNED BY public.po_receipts.rec
 --
 
 CREATE TABLE public.purchase_orders (
-    po_id integer NOT NULL,
+    po_id bigint NOT NULL,
     po_number character varying(30) NOT NULL,
-    requisition_id integer NOT NULL,
-    supplier_id integer NOT NULL,
+    requisition_id bigint NOT NULL,
+    supplier_id bigint NOT NULL,
     created_date date,
     stage character varying(50),
     status character varying(30),
@@ -389,7 +389,7 @@ ALTER TABLE public.purchase_orders OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.purchase_orders_po_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -414,9 +414,9 @@ ALTER SEQUENCE public.purchase_orders_po_id_seq OWNED BY public.purchase_orders.
 --
 
 CREATE TABLE public.requisition_history (
-    history_id integer NOT NULL,
-    requisition_id integer NOT NULL,
-    action_by integer NOT NULL,
+    history_id bigint NOT NULL,
+    requisition_id bigint NOT NULL,
+    action_by bigint NOT NULL,
     step character varying(100),
     remarks text,
     action_date timestamp without time zone DEFAULT CURRENT_TIMESTAMP
@@ -431,7 +431,7 @@ ALTER TABLE public.requisition_history OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.requisition_history_history_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -456,8 +456,8 @@ ALTER SEQUENCE public.requisition_history_history_id_seq OWNED BY public.requisi
 --
 
 CREATE TABLE public.requisition_line_items (
-    line_item_id integer NOT NULL,
-    requisition_id integer NOT NULL,
+    line_item_id bigint NOT NULL,
+    requisition_id bigint NOT NULL,
     description text NOT NULL,
     quantity integer NOT NULL,
     unit_price numeric(12,2) NOT NULL
@@ -472,7 +472,7 @@ ALTER TABLE public.requisition_line_items OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.requisition_line_items_line_item_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -497,12 +497,12 @@ ALTER SEQUENCE public.requisition_line_items_line_item_id_seq OWNED BY public.re
 --
 
 CREATE TABLE public.requisitions (
-    requisition_id integer NOT NULL,
+    requisition_id bigint NOT NULL,
     requisition_number character varying(30) NOT NULL,
-    created_by integer NOT NULL,
-    department_id integer NOT NULL,
-    supplier_id integer,
-    category_id integer NOT NULL,
+    created_by bigint NOT NULL,
+    department_id bigint NOT NULL,
+    supplier_id bigint,
+    category_id bigint NOT NULL,
     title character varying(150) NOT NULL,
     justification text,
     needed_by date,
@@ -520,7 +520,7 @@ ALTER TABLE public.requisitions OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.requisitions_requisition_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -545,7 +545,7 @@ ALTER SEQUENCE public.requisitions_requisition_id_seq OWNED BY public.requisitio
 --
 
 CREATE TABLE public.roles (
-    role_id integer NOT NULL,
+    role_id bigint NOT NULL,
     role_name character varying(50) NOT NULL,
     description text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
@@ -560,7 +560,7 @@ ALTER TABLE public.roles OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.roles_role_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -585,7 +585,7 @@ ALTER SEQUENCE public.roles_role_id_seq OWNED BY public.roles.role_id;
 --
 
 CREATE TABLE public.suppliers (
-    supplier_id integer NOT NULL,
+    supplier_id bigint NOT NULL,
     supplier_code character varying(20) NOT NULL,
     supplier_name character varying(150) NOT NULL,
     contact_name character varying(100),
@@ -606,7 +606,7 @@ ALTER TABLE public.suppliers OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.suppliers_supplier_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -631,9 +631,9 @@ ALTER SEQUENCE public.suppliers_supplier_id_seq OWNED BY public.suppliers.suppli
 --
 
 CREATE TABLE public.user_roles (
-    user_role_id integer NOT NULL,
-    user_id integer NOT NULL,
-    role_id integer NOT NULL,
+    user_role_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    role_id bigint NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -646,7 +646,7 @@ ALTER TABLE public.user_roles OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.user_roles_user_role_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -671,8 +671,8 @@ ALTER SEQUENCE public.user_roles_user_role_id_seq OWNED BY public.user_roles.use
 --
 
 CREATE TABLE public.users (
-    user_id integer NOT NULL,
-    department_id integer NOT NULL,
+    user_id bigint NOT NULL,
+    department_id bigint NOT NULL,
     employee_id character varying(20) NOT NULL,
     username character varying(50) NOT NULL,
     password_hash character varying(255) NOT NULL,
@@ -693,7 +693,7 @@ ALTER TABLE public.users OWNER TO postgres;
 --
 
 CREATE SEQUENCE public.users_user_id_seq
-    AS integer
+    AS bigint
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE

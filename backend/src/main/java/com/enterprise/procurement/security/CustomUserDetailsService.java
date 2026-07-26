@@ -8,10 +8,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
@@ -42,6 +43,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return user.getUserRoles().stream()
                 .map(userRole -> {
+                    if (userRole.getRole() == null) {
+                        return null;
+                    }
                     String roleName = userRole.getRole().getRoleName();
                     if (roleName == null) {
                         return null;

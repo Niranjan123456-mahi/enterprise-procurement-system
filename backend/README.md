@@ -1,6 +1,7 @@
 <div align="center">
 
 # 🏢 Enterprise Procurement System
+
 ### *Enterprise Source-to-Pay (S2P) Platform*
 
 <p align="center">
@@ -21,11 +22,15 @@ React, Spring Boot, PostgreSQL, and modern enterprise architecture.
 
 # 📖 Overview
 
-The **Enterprise Procurement System** is a centralized Source-to-Pay (S2P) application designed to automate procurement operations inside an organization.
+The **Enterprise Procurement System** is a centralized Source-to-Pay (S2P) application designed to automate procurement
+operations inside an organization.
 
-The platform enables employees to submit purchase requests, automatically routes them through configurable approval workflows, generates purchase orders, manages suppliers, tracks procurement activities, and records every transaction for auditing and reporting.
+The platform enables employees to submit purchase requests, automatically routes them through configurable approval
+workflows, generates purchase orders, manages suppliers, tracks procurement activities, and records every transaction
+for auditing and reporting.
 
-The project follows real-world enterprise software architecture and is being developed as part of the **Infosys Springboard Internship**.
+The project follows real-world enterprise software architecture and is being developed as part of the **Infosys
+Springboard Internship**.
 
 ---
 
@@ -276,13 +281,13 @@ enterprise-procurement-system
 
 # 👥 Team Modules
 
-| Module | Responsibility |
-|---------|---------------|
+| Module                       | Responsibility                        |
+|------------------------------|---------------------------------------|
 | Master Data & Approval Rules | Database, ER Diagram, Approval Engine |
-| Requisition Workflow | Purchase Request Module |
-| Purchase Order Management | PO Generation |
-| Frontend | React UI Development |
-| Reports & Security | Authentication, Reports, Audit |
+| Requisition Workflow         | Purchase Request Module               |
+| Purchase Order Management    | PO Generation                         |
+| Frontend                     | React UI Development                  |
+| Reports & Security           | Authentication, Reports, Audit        |
 
 ---
 
@@ -321,10 +326,10 @@ Approval policies are stored in the database.
 
 Example:
 
-| Department | Category | Amount | Approver |
-|------------|----------|---------|----------|
-| IT | Laptop | ₹0 - ₹50,000 | Manager |
-| IT | Laptop | ₹50,001 - ₹2,00,000 | Finance |
+| Department | Category | Amount              | Approver |
+|------------|----------|---------------------|----------|
+| IT         | Laptop   | ₹0 - ₹50,000        | Manager  |
+| IT         | Laptop   | ₹50,001 - ₹2,00,000 | Finance  |
 
 Benefits
 
