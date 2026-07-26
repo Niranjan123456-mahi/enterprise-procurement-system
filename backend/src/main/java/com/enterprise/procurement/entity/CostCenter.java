@@ -10,35 +10,37 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "cost_centers")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Role {
+public class CostCenter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "role_id")
-    private Long roleId;
+    @Column(name = "cost_center_id")
+    private Long costCenterId;
 
-    @Column(name = "role_name", nullable = false, unique = true)
-    private String roleName;
+    @Column(name = "cost_center_code", nullable = false, unique = true)
+    private String costCenterCode;
+
+    @Column(name = "cost_center_name", nullable = false)
+    private String costCenterName;
 
     @Column(name = "description")
     private String description;
+
+    @Column(name = "status")
+    private String status;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "costCenter", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<UserRole> userRoles;
-
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<ApprovalRuleApprover> approvalRuleApprovers;
+    private List<Department> departments;
 }

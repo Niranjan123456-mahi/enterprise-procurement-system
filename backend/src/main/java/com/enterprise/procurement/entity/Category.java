@@ -10,35 +10,41 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Role {
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "role_id")
-    private Long roleId;
+    @Column(name = "category_id")
+    private Long categoryId;
 
-    @Column(name = "role_name", nullable = false, unique = true)
-    private String roleName;
+    @Column(name = "category_code", nullable = false, unique = true)
+    private String categoryCode;
+
+    @Column(name = "category_name", nullable = false)
+    private String categoryName;
 
     @Column(name = "description")
     private String description;
+
+    @Column(name = "status")
+    private String status;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<UserRole> userRoles;
+    private List<ApprovalRule> approvalRules;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<ApprovalRuleApprover> approvalRuleApprovers;
+    private List<Requisition> requisitions;
 }
