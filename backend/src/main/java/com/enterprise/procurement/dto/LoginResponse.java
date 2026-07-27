@@ -21,6 +21,7 @@ public class LoginResponse {
     private String accessToken;
 
     @Schema(description = "Token type prefix", example = "Bearer")
+    @Builder.Default
     private String tokenType = "Bearer";
 
     @Schema(description = "Username of the authenticated user", example = "testadmin")
