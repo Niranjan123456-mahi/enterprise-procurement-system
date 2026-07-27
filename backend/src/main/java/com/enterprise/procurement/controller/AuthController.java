@@ -2,6 +2,7 @@ package com.enterprise.procurement.controller;
 
 import com.enterprise.procurement.dto.JwtResponse;
 import com.enterprise.procurement.dto.LoginRequest;
+import com.enterprise.procurement.dto.LoginResponse;
 import com.enterprise.procurement.dto.RegisterRequest;
 import com.enterprise.procurement.dto.RegisterResponse;
 import com.enterprise.procurement.entity.Department;
@@ -12,6 +13,12 @@ import com.enterprise.procurement.repository.UserRepository;
 import com.enterprise.procurement.security.CustomUserDetailsService;
 import com.enterprise.procurement.security.JwtService;
 import com.enterprise.procurement.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,11 +29,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin("*")
 @Validated
+@Tag(name = "Authentication", description = "Endpoints for user registration and authentication")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -92,10 +103,26 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
+    @Operation(summary = "User login", description = "Authenticates user with credentials and returns JWT token along with user roles.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully authenticated",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
         String token = jwtService.generateToken(userDetails);
-        return ResponseEntity.ok(new JwtResponse(token, "Bearer", userDetails.getUsername()));
+
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getUsername()));
+
+        List<String> roles = user.getUserRoles() == null ? Collections.emptyList() :
+                user.getUserRoles().stream()
+                        .filter(ur -> ur.getRole() != null && ur.getRole().getRoleName() != null)
+                        .map(ur -> ur.getRole().getRoleName())
+                        .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new LoginResponse(token, "Bearer", userDetails.getUsername(), roles));
     }
 }
