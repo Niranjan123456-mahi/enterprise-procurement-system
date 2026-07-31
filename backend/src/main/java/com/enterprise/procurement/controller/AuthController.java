@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -76,9 +77,19 @@ public class AuthController {
                     .body(new RegisterResponse("Email is already registered", null));
         }
 
-        if (userRepository.findByEmployeeId(request.getEmployeeId()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new RegisterResponse("Employee ID is already in use", null));
+        String empId = request.getEmployeeId();
+        if (empId == null || empId.trim().isEmpty()) {
+            long count = userRepository.count();
+            empId = "EMP" + String.format("%03d", count + 1);
+            while (userRepository.findByEmployeeId(empId).isPresent()) {
+                count++;
+                empId = "EMP" + String.format("%03d", count + 1);
+            }
+        } else {
+            if (userRepository.findByEmployeeId(empId).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new RegisterResponse("Employee ID is already in use", null));
+            }
         }
 
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -86,7 +97,7 @@ public class AuthController {
 
         User user = User.builder()
                 .department(department)
-                .employeeId(request.getEmployeeId())
+                .employeeId(empId)
                 .username(request.getUsername())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
@@ -102,6 +113,8 @@ public class AuthController {
                 .body(new RegisterResponse("User registered successfully", savedUser.getUserId()));
     }
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthController.class);
+
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticates user with credentials and returns JWT token along with user roles.")
     @ApiResponses(value = {
@@ -110,7 +123,24 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        log.info("[AUTH] Login attempt received for username: {}", request.getUsername());
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            log.info("[AUTH] AuthenticationManager successful for username: {}", request.getUsername());
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            log.error("[AUTH] Authentication failed for username: {}. Reason: {}", request.getUsername(), e.getMessage());
+            Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+            if (userOpt.isPresent()) {
+                String hash = userOpt.get().getPasswordHash();
+                String maskedHash = hash != null && hash.length() > 7 ? hash.substring(0, 7) + "..." : "invalid";
+                log.error("[AUTH_DEBUG] User exists in DB. Stored hash: {}. Result of matches: {}", 
+                        maskedHash, passwordEncoder.matches(request.getPassword(), hash));
+            } else {
+                log.error("[AUTH_DEBUG] User does not exist in DB: {}", request.getUsername());
+            }
+            throw e;
+        }
+
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
         String token = jwtService.generateToken(userDetails);
 

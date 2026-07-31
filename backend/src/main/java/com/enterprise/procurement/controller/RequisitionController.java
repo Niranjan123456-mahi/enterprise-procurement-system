@@ -1,6 +1,7 @@
 package com.enterprise.procurement.controller;
 
 import com.enterprise.procurement.dto.RequisitionActionRequest;
+import com.enterprise.procurement.dto.RequisitionApprovalRequest;
 import com.enterprise.procurement.dto.RequisitionCreateRequest;
 import com.enterprise.procurement.entity.Requisition;
 import com.enterprise.procurement.service.RequisitionService;
@@ -58,6 +59,30 @@ public class RequisitionController {
                                                         @Valid @RequestBody RequisitionActionRequest request,
                                                         Authentication authentication) {
         return ResponseEntity.ok(service.actOnRequisition(id, request, authentication.getName()));
+    }
+
+    @RequestMapping(value = "/{id}/approve", method = {RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<Requisition> approve(@PathVariable Long id,
+                                               @RequestBody(required = false) RequisitionApprovalRequest request,
+                                               Authentication authentication) {
+        RequisitionActionRequest actionReq = new RequisitionActionRequest();
+        actionReq.setAction("APPROVE");
+        if (request != null) {
+            actionReq.setRemarks(request.getRemarks());
+        }
+        return ResponseEntity.ok(service.actOnRequisition(id, actionReq, authentication.getName()));
+    }
+
+    @RequestMapping(value = "/{id}/reject", method = {RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<Requisition> reject(@PathVariable Long id,
+                                              @RequestBody(required = false) RequisitionApprovalRequest request,
+                                              Authentication authentication) {
+        RequisitionActionRequest actionReq = new RequisitionActionRequest();
+        actionReq.setAction("REJECT");
+        if (request != null) {
+            actionReq.setRemarks(request.getRemarks());
+        }
+        return ResponseEntity.ok(service.actOnRequisition(id, actionReq, authentication.getName()));
     }
 
     @PutMapping("/{id}")

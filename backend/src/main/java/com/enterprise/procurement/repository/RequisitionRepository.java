@@ -9,4 +9,8 @@ public interface RequisitionRepository extends JpaRepository<Requisition, Long> 
     List<Requisition> findByCreatedBy_UsernameOrderByCreatedAtDesc(String username);
 
     List<Requisition> findByStatusOrderByCreatedAtDesc(String status);
+
+    long countByStatus(String status);
+
+    long countByStatusIn(List<String> statuses);
 }
