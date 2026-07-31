@@ -41,6 +41,11 @@ public class RequisitionController {
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<List<Requisition>> getPendingForMe(Authentication authentication) {
+        return ResponseEntity.ok(service.findPendingForApprover(authentication.getName()));
+    }
+
     @PostMapping
     public ResponseEntity<Requisition> create(@Valid @RequestBody RequisitionCreateRequest request,
                                               Authentication authentication) {

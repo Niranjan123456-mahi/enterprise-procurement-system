@@ -2,23 +2,12 @@ package com.enterprise.procurement.service;
 
 import com.enterprise.procurement.dto.RequisitionActionRequest;
 import com.enterprise.procurement.dto.RequisitionCreateRequest;
-import com.enterprise.procurement.entity.Category;
-import com.enterprise.procurement.entity.Department;
-import com.enterprise.procurement.entity.Requisition;
-import com.enterprise.procurement.entity.RequisitionHistory;
-import com.enterprise.procurement.entity.RequisitionLineItem;
-import com.enterprise.procurement.entity.RequisitionStatus;
-import com.enterprise.procurement.entity.Supplier;
-import com.enterprise.procurement.entity.User;
+import com.enterprise.procurement.entity.*;
+import com.enterprise.procurement.event.RequisitionApprovedEvent;
 import com.enterprise.procurement.exception.BadRequestException;
 import com.enterprise.procurement.exception.ResourceNotFoundException;
-import com.enterprise.procurement.repository.ApprovalRuleRepository;
-import com.enterprise.procurement.repository.CategoryRepository;
-import com.enterprise.procurement.repository.DepartmentRepository;
-import com.enterprise.procurement.repository.RequisitionHistoryRepository;
-import com.enterprise.procurement.repository.RequisitionRepository;
-import com.enterprise.procurement.repository.SupplierRepository;
-import com.enterprise.procurement.repository.UserRepository;
+import com.enterprise.procurement.repository.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -38,7 +28,9 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
     private final ApprovalRuleRepository approvalRuleRepository;
+    private final ApprovalRuleApproverRepository approvalRuleApproverRepository;
     private final RequisitionHistoryRepository requisitionHistoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RequisitionService(RequisitionRepository repository,
                               UserRepository userRepository,
@@ -46,15 +38,23 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                               CategoryRepository categoryRepository,
                               SupplierRepository supplierRepository,
                               ApprovalRuleRepository approvalRuleRepository,
-                              RequisitionHistoryRepository requisitionHistoryRepository) {
+                              ApprovalRuleApproverRepository approvalRuleApproverRepository,
+                              RequisitionHistoryRepository requisitionHistoryRepository,
+                              ApplicationEventPublisher eventPublisher) {
         super(repository);
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.categoryRepository = categoryRepository;
         this.supplierRepository = supplierRepository;
         this.approvalRuleRepository = approvalRuleRepository;
+        this.approvalRuleApproverRepository = approvalRuleApproverRepository;
         this.requisitionHistoryRepository = requisitionHistoryRepository;
+        this.eventPublisher = eventPublisher;
     }
+
+    // ---------------------------------------------------------------
+    // CREATE
+    // ---------------------------------------------------------------
 
     @Transactional
     public Requisition create(RequisitionCreateRequest request, String username) {
@@ -74,9 +74,9 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         }
 
         BigDecimal totalAmount = calculateTotalAmount(request.getItems());
-        boolean hasApprovalRule = approvalRuleRepository
-                .findMatchingRule(department.getDepartmentId(), category.getCategoryId(), totalAmount)
-                .isPresent();
+
+        Optional<ApprovalRule> matchingRule = approvalRuleRepository
+                .findMatchingRule(department.getDepartmentId(), category.getCategoryId(), totalAmount);
 
         Requisition requisition = new Requisition();
         requisition.setRequisitionNumber(generateRequisitionNumber());
@@ -88,7 +88,12 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         requisition.setJustification(request.getJustification());
         requisition.setNeededBy(request.getNeededBy());
         requisition.setTotalAmount(totalAmount);
-        requisition.setStatus(hasApprovalRule ? RequisitionStatus.PENDING_APPROVAL : RequisitionStatus.SUBMITTED);
+        // No matching rule at all = nothing to approve, goes straight to SUBMITTED.
+        // (Worth confirming with your team whether this should really be an
+        // auto-approval path or should require manual admin review instead.)
+        requisition.setStatus(matchingRule.isPresent()
+                ? RequisitionStatus.PENDING_APPROVAL
+                : RequisitionStatus.SUBMITTED);
 
         List<RequisitionLineItem> lineItems = request.getItems().stream()
                 .map(item -> RequisitionLineItem.builder()
@@ -105,47 +110,85 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         return savedRequisition;
     }
 
+    // ---------------------------------------------------------------
+    // APPROVE / REJECT  — now a real ordered multi-step chain
+    // ---------------------------------------------------------------
+
     @Transactional
     public Requisition actOnRequisition(Long id, RequisitionActionRequest request, String username) {
         Requisition requisition = findById(id);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
 
-        boolean canApprove = user.getUserRoles().stream()
-                .map(userRole -> userRole.getRole().getRoleName())
-                .anyMatch(roleName -> {
-                    if (roleName == null) return false;
-                    String rn = roleName.trim().toLowerCase();
-                    return rn.equals("approver") || rn.equals("admin") || rn.equals("manager") || rn.equals("finance");
-                });
-
-        if (!canApprove) {
-            throw new AccessDeniedException("User is not authorized to approve or reject requisitions");
-        }
-
         if (!RequisitionStatus.PENDING_APPROVAL.equalsIgnoreCase(requisition.getStatus())) {
             throw new BadRequestException("Only requisitions pending approval can be acted upon");
         }
 
+        // 1. Find the rule that governs this requisition
+        ApprovalRule rule = approvalRuleRepository
+                .findMatchingRule(requisition.getDepartment().getDepartmentId(),
+                        requisition.getCategory().getCategoryId(),
+                        requisition.getTotalAmount())
+                .orElseThrow(() -> new BadRequestException(
+                        "No approval rule found for this requisition — cannot determine approver chain"));
+
+        // 2. Get the ordered chain of required roles for that rule
+        List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
+                .findByRule_RuleIdOrderBySequenceNoAsc(rule.getRuleId());
+
+        if (chain.isEmpty()) {
+            throw new BadRequestException("Approval rule " + rule.getRuleId() + " has no approvers configured");
+        }
+
+        // 3. Figure out which step we're on by counting completed "Approved" steps so far
+        long completedSteps = requisitionHistoryRepository
+                .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
+
+        if (completedSteps >= chain.size()) {
+            throw new BadRequestException("This requisition has already completed its approval chain");
+        }
+
+        ApprovalRuleApprover currentStep = chain.get((int) completedSteps);
+        Long requiredRoleId = currentStep.getRole().getRoleId();
+
+        // 4. Confirm the logged-in user actually holds the role required for THIS step
+        //    (not just "any approver role" — must be the correct one, in order)
+        boolean isCorrectApprover = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleId().equals(requiredRoleId));
+
+        if (!isCorrectApprover) {
+            throw new AccessDeniedException(
+                    "This requisition is currently awaiting approval from role: "
+                            + currentStep.getRole().getRoleName() + ". You are not authorized to act on it yet.");
+        }
+
         String action = request.getAction().trim().toUpperCase();
-        String step;
-        String status;
+
         if ("APPROVE".equals(action) || "APPROVED".equals(action)) {
-            status = RequisitionStatus.APPROVED;
-            step = "Approved";
+            createHistory(requisition, user, "Approved", request.getRemarks());
+
+            boolean wasLastStep = (completedSteps + 1) == chain.size();
+            if (wasLastStep) {
+                requisition.setStatus(RequisitionStatus.APPROVED);
+                eventPublisher.publishEvent(new RequisitionApprovedEvent(this, requisition));
+            }
+            // If it wasn't the last step, status stays PENDING_APPROVAL —
+            // the next approver in the chain now sees it in their pending list.
+
         } else if ("REJECT".equals(action) || "REJECTED".equals(action)) {
-            status = RequisitionStatus.REJECTED;
-            step = "Rejected";
+            requisition.setStatus(RequisitionStatus.REJECTED);
+            createHistory(requisition, user, "Rejected", request.getRemarks());
+
         } else {
             throw new BadRequestException("Action must be either APPROVE or REJECT");
         }
 
-        requisition.setStatus(status);
-        Requisition saved = save(requisition);
-
-        createHistory(saved, user, step, request.getRemarks());
-        return saved;
+        return save(requisition);
     }
+
+    // ---------------------------------------------------------------
+    // QUERIES
+    // ---------------------------------------------------------------
 
     public List<Requisition> findMyRequisitions(String username) {
         return ((RequisitionRepository) repository).findByCreatedBy_UsernameOrderByCreatedAtDesc(username);
@@ -154,6 +197,49 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     public List<Requisition> findByStatus(String status) {
         return ((RequisitionRepository) repository).findByStatusOrderByCreatedAtDesc(status);
     }
+
+    // "What's pending for ME to approve right now" — computes current step per
+    // requisition, same logic as actOnRequisition, but read-only and filtered
+    // to requisitions where it's currently this user's turn.
+    public List<Requisition> findPendingForApprover(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+
+        List<Long> userRoleIds = user.getUserRoles().stream()
+                .map(userRole -> userRole.getRole().getRoleId())
+                .collect(Collectors.toList());
+
+        List<Requisition> pending = ((RequisitionRepository) repository)
+                .findByStatusOrderByCreatedAtDesc(RequisitionStatus.PENDING_APPROVAL);
+
+        return pending.stream()
+                .filter(req -> isCurrentUsersTurn(req, userRoleIds))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isCurrentUsersTurn(Requisition requisition, List<Long> userRoleIds) {
+        Optional<ApprovalRule> ruleOpt = approvalRuleRepository.findMatchingRule(
+                requisition.getDepartment().getDepartmentId(),
+                requisition.getCategory().getCategoryId(),
+                requisition.getTotalAmount());
+
+        if (ruleOpt.isEmpty()) return false;
+
+        List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
+                .findByRule_RuleIdOrderBySequenceNoAsc(ruleOpt.get().getRuleId());
+        if (chain.isEmpty()) return false;
+
+        long completedSteps = requisitionHistoryRepository
+                .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
+        if (completedSteps >= chain.size()) return false;
+
+        Long requiredRoleId = chain.get((int) completedSteps).getRole().getRoleId();
+        return userRoleIds.contains(requiredRoleId);
+    }
+
+// ---------------------------------------------------------------
+    // HELPERS (unchanged from your version)
+    // ---------------------------------------------------------------
 
     private void createHistory(Requisition requisition, User actionBy, String step, String remarks) {
         RequisitionHistory history = RequisitionHistory.builder()
