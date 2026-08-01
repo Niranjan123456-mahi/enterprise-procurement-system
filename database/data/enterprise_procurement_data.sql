@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict OfgCi18cq2IHHbmMwuyis4cjpIIrphK84afmSm6E5VRFqf5VeTMHqaYIseDaXCx
+\restrict ZBq7cMc7pdrwgaQCBOya2jg1a3F6BZhU3eHE20SbMUfdKhOXFYAdtCUgb3HV8BB
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-07-26 17:36:07
+-- Started on 2026-08-01 16:30:28
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -22,8 +22,8 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 5164 (class 0 OID 16660)
--- Dependencies: 230
+-- TOC entry 5159 (class 0 OID 18153)
+-- Dependencies: 225
 -- Data for Name: categories; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -37,8 +37,8 @@ COPY public.categories (category_id, category_code, category_name, description, 
 
 
 --
--- TOC entry 5156 (class 0 OID 16570)
--- Dependencies: 222
+-- TOC entry 5161 (class 0 OID 18164)
+-- Dependencies: 227
 -- Data for Name: cost_centers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -51,8 +51,8 @@ COPY public.cost_centers (cost_center_id, cost_center_code, cost_center_name, de
 
 
 --
--- TOC entry 5158 (class 0 OID 16586)
--- Dependencies: 224
+-- TOC entry 5163 (class 0 OID 18175)
+-- Dependencies: 229
 -- Data for Name: departments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -65,8 +65,8 @@ COPY public.departments (department_id, cost_center_id, department_code, departm
 
 
 --
--- TOC entry 5168 (class 0 OID 16692)
--- Dependencies: 234
+-- TOC entry 5155 (class 0 OID 18134)
+-- Dependencies: 221
 -- Data for Name: approval_rules; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -78,8 +78,8 @@ COPY public.approval_rules (rule_id, department_id, category_id, min_amount, max
 
 
 --
--- TOC entry 5154 (class 0 OID 16556)
--- Dependencies: 220
+-- TOC entry 5177 (class 0 OID 18248)
+-- Dependencies: 243
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -93,8 +93,8 @@ COPY public.roles (role_id, role_name, description, created_at) FROM stdin;
 
 
 --
--- TOC entry 5170 (class 0 OID 16716)
--- Dependencies: 236
+-- TOC entry 5153 (class 0 OID 18125)
+-- Dependencies: 219
 -- Data for Name: approval_rule_approvers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -107,23 +107,23 @@ COPY public.approval_rule_approvers (rule_approver_id, rule_id, sequence_no, rol
 
 
 --
--- TOC entry 5160 (class 0 OID 16608)
--- Dependencies: 226
+-- TOC entry 5183 (class 0 OID 18276)
+-- Dependencies: 249
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.users (user_id, department_id, employee_id, username, password_hash, full_name, email, phone, designation, status, created_at) FROM stdin;
-1	1	EMP001	admin	admin123	System Admin	admin@company.com	9876500001	Administrator	ACTIVE	2026-07-26 17:26:12.748156
-2	1	EMP002	manager1	manager123	IT Manager	manager@company.com	9876500002	Manager	ACTIVE	2026-07-26 17:26:12.748156
-3	2	EMP003	finance1	finance123	Finance Officer	finance@company.com	9876500003	Finance	ACTIVE	2026-07-26 17:26:12.748156
-4	1	EMP004	requester1	request123	John Doe	john@company.com	9876500004	Employee	ACTIVE	2026-07-26 17:26:12.748156
-5	4	EMP005	receiver1	receiver123	Warehouse User	receiver@company.com	9876500005	Receiver	ACTIVE	2026-07-26 17:26:12.748156
+1	1	EMP001	admin	$2a$10$izskd6gIgRoB/nMwB2FtJOTISNFIFx55THLoymHNhFH7hLKPNE7Rm	System Admin	admin@company.com	9876500001	Administrator	ACTIVE	2026-07-26 17:26:12.748156
+2	1	EMP002	manager1	$2a$10$s09Et4kA9qBtZpOInGAC4.v5vpP7P8cx2F6jhiWUyHf5WDqf80Vme	IT Manager	manager@company.com	9876500002	Manager	ACTIVE	2026-07-26 17:26:12.748156
+3	2	EMP003	finance1	$2a$10$wwSK2Hn38ZFee1t8FQ6m1.77JskwABCBruor2UM/rV4qP6JxggQBS	Finance Officer	finance@company.com	9876500003	Finance	ACTIVE	2026-07-26 17:26:12.748156
+4	1	EMP004	requester1	$2a$10$NHyyGz250coe1QH6c2yjuOVnyUwg7oZaUNW6D0Oqov46461FM2Rhy	John Doe	john@company.com	9876500004	Employee	ACTIVE	2026-07-26 17:26:12.748156
+5	4	EMP005	receiver1	$2a$10$ZJLXiWwAhoNhtSSMFfp0BeGCq2k0A32Y/8zqS3jsvNZZq6j92QcuK	Warehouse User	receiver@company.com	9876500005	Receiver	ACTIVE	2026-07-26 17:26:12.748156
 \.
 
 
 --
--- TOC entry 5184 (class 0 OID 16881)
--- Dependencies: 250
+-- TOC entry 5157 (class 0 OID 18145)
+-- Dependencies: 223
 -- Data for Name: audit_logs; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -136,8 +136,8 @@ COPY public.audit_logs (audit_id, user_id, module, action, entity_name, entity_i
 
 
 --
--- TOC entry 5166 (class 0 OID 16676)
--- Dependencies: 232
+-- TOC entry 5179 (class 0 OID 18257)
+-- Dependencies: 245
 -- Data for Name: suppliers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -149,8 +149,8 @@ COPY public.suppliers (supplier_id, supplier_code, supplier_name, contact_name, 
 
 
 --
--- TOC entry 5172 (class 0 OID 16738)
--- Dependencies: 238
+-- TOC entry 5175 (class 0 OID 18234)
+-- Dependencies: 241
 -- Data for Name: requisitions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -162,8 +162,8 @@ COPY public.requisitions (requisition_id, requisition_number, created_by, depart
 
 
 --
--- TOC entry 5178 (class 0 OID 16819)
--- Dependencies: 244
+-- TOC entry 5169 (class 0 OID 18204)
+-- Dependencies: 235
 -- Data for Name: purchase_orders; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -174,8 +174,8 @@ COPY public.purchase_orders (po_id, po_number, requisition_id, supplier_id, crea
 
 
 --
--- TOC entry 5180 (class 0 OID 16843)
--- Dependencies: 246
+-- TOC entry 5165 (class 0 OID 18187)
+-- Dependencies: 231
 -- Data for Name: po_line_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -187,8 +187,8 @@ COPY public.po_line_items (po_line_item_id, po_id, description, ordered_qty, rec
 
 
 --
--- TOC entry 5182 (class 0 OID 16860)
--- Dependencies: 248
+-- TOC entry 5167 (class 0 OID 18196)
+-- Dependencies: 233
 -- Data for Name: po_receipts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -199,8 +199,8 @@ COPY public.po_receipts (receipt_id, po_id, description, qty_received, received_
 
 
 --
--- TOC entry 5176 (class 0 OID 16796)
--- Dependencies: 242
+-- TOC entry 5171 (class 0 OID 18213)
+-- Dependencies: 237
 -- Data for Name: requisition_history; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -215,8 +215,8 @@ COPY public.requisition_history (history_id, requisition_id, action_by, step, re
 
 
 --
--- TOC entry 5174 (class 0 OID 16777)
--- Dependencies: 240
+-- TOC entry 5173 (class 0 OID 18223)
+-- Dependencies: 239
 -- Data for Name: requisition_line_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -229,8 +229,8 @@ COPY public.requisition_line_items (line_item_id, requisition_id, description, q
 
 
 --
--- TOC entry 5162 (class 0 OID 16637)
--- Dependencies: 228
+-- TOC entry 5181 (class 0 OID 18268)
+-- Dependencies: 247
 -- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -245,7 +245,7 @@ COPY public.user_roles (user_role_id, user_id, role_id, created_at) FROM stdin;
 
 --
 -- TOC entry 5190 (class 0 OID 0)
--- Dependencies: 235
+-- Dependencies: 220
 -- Name: approval_rule_approvers_rule_approver_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -254,7 +254,7 @@ SELECT pg_catalog.setval('public.approval_rule_approvers_rule_approver_id_seq', 
 
 --
 -- TOC entry 5191 (class 0 OID 0)
--- Dependencies: 233
+-- Dependencies: 222
 -- Name: approval_rules_rule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -263,7 +263,7 @@ SELECT pg_catalog.setval('public.approval_rules_rule_id_seq', 3, true);
 
 --
 -- TOC entry 5192 (class 0 OID 0)
--- Dependencies: 249
+-- Dependencies: 224
 -- Name: audit_logs_audit_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -272,7 +272,7 @@ SELECT pg_catalog.setval('public.audit_logs_audit_id_seq', 4, true);
 
 --
 -- TOC entry 5193 (class 0 OID 0)
--- Dependencies: 229
+-- Dependencies: 226
 -- Name: categories_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -281,7 +281,7 @@ SELECT pg_catalog.setval('public.categories_category_id_seq', 5, true);
 
 --
 -- TOC entry 5194 (class 0 OID 0)
--- Dependencies: 221
+-- Dependencies: 228
 -- Name: cost_centers_cost_center_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -290,7 +290,7 @@ SELECT pg_catalog.setval('public.cost_centers_cost_center_id_seq', 4, true);
 
 --
 -- TOC entry 5195 (class 0 OID 0)
--- Dependencies: 223
+-- Dependencies: 230
 -- Name: departments_department_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -299,7 +299,7 @@ SELECT pg_catalog.setval('public.departments_department_id_seq', 4, true);
 
 --
 -- TOC entry 5196 (class 0 OID 0)
--- Dependencies: 245
+-- Dependencies: 232
 -- Name: po_line_items_po_line_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -308,7 +308,7 @@ SELECT pg_catalog.setval('public.po_line_items_po_line_item_id_seq', 3, true);
 
 --
 -- TOC entry 5197 (class 0 OID 0)
--- Dependencies: 247
+-- Dependencies: 234
 -- Name: po_receipts_receipt_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -317,7 +317,7 @@ SELECT pg_catalog.setval('public.po_receipts_receipt_id_seq', 2, true);
 
 --
 -- TOC entry 5198 (class 0 OID 0)
--- Dependencies: 243
+-- Dependencies: 236
 -- Name: purchase_orders_po_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -326,7 +326,7 @@ SELECT pg_catalog.setval('public.purchase_orders_po_id_seq', 2, true);
 
 --
 -- TOC entry 5199 (class 0 OID 0)
--- Dependencies: 241
+-- Dependencies: 238
 -- Name: requisition_history_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -335,7 +335,7 @@ SELECT pg_catalog.setval('public.requisition_history_history_id_seq', 6, true);
 
 --
 -- TOC entry 5200 (class 0 OID 0)
--- Dependencies: 239
+-- Dependencies: 240
 -- Name: requisition_line_items_line_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -344,7 +344,7 @@ SELECT pg_catalog.setval('public.requisition_line_items_line_item_id_seq', 4, tr
 
 --
 -- TOC entry 5201 (class 0 OID 0)
--- Dependencies: 237
+-- Dependencies: 242
 -- Name: requisitions_requisition_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -353,7 +353,7 @@ SELECT pg_catalog.setval('public.requisitions_requisition_id_seq', 3, true);
 
 --
 -- TOC entry 5202 (class 0 OID 0)
--- Dependencies: 219
+-- Dependencies: 244
 -- Name: roles_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -362,7 +362,7 @@ SELECT pg_catalog.setval('public.roles_role_id_seq', 5, true);
 
 --
 -- TOC entry 5203 (class 0 OID 0)
--- Dependencies: 231
+-- Dependencies: 246
 -- Name: suppliers_supplier_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -371,7 +371,7 @@ SELECT pg_catalog.setval('public.suppliers_supplier_id_seq', 3, true);
 
 --
 -- TOC entry 5204 (class 0 OID 0)
--- Dependencies: 227
+-- Dependencies: 248
 -- Name: user_roles_user_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -380,18 +380,18 @@ SELECT pg_catalog.setval('public.user_roles_user_role_id_seq', 5, true);
 
 --
 -- TOC entry 5205 (class 0 OID 0)
--- Dependencies: 225
+-- Dependencies: 250
 -- Name: users_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
 SELECT pg_catalog.setval('public.users_user_id_seq', 5, true);
 
 
--- Completed on 2026-07-26 17:36:07
+-- Completed on 2026-08-01 16:30:28
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OfgCi18cq2IHHbmMwuyis4cjpIIrphK84afmSm6E5VRFqf5VeTMHqaYIseDaXCx
+\unrestrict ZBq7cMc7pdrwgaQCBOya2jg1a3F6BZhU3eHE20SbMUfdKhOXFYAdtCUgb3HV8BB
 
