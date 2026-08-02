@@ -1,31 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../../api";
 import "./RoleAdmin.css";
 
-const ALL_ROLES = ["Requester", "Approver", "Goods Receiver", "Procurement Admin"];
+function RoleAdmin({ user }) {
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [userRoles, setUserRoles] = useState([]);
+  const [error, setError] = useState("");
 
-function RoleAdmin() {
-  // fake sample users and the roles currently assigned to them
-  const [users, setUsers] = useState([
-    { username: "employee1", roles: ["Requester"] },
-    { username: "manager1", roles: ["Approver"] },
-    { username: "receiver1", roles: ["Receiver"] },
-    { username: "admin1", roles: ["Admin"] },
-  ]);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [usersData, rolesData, userRolesData] = await Promise.all([
+          apiFetch("/api/users", {}, user.token),
+          apiFetch("/api/roles", {}, user.token),
+          apiFetch("/api/user-roles", {}, user.token),
+        ]);
 
-  function toggleRole(username, role) {
-    const updated = users.map((u) => {
-      if (u.username !== username) {
-        return u;
+        setUsers(usersData);
+        setRoles(rolesData);
+        setUserRoles(userRolesData);
+      } catch {
+        setError("Failed to load users and roles data.");
       }
+    }
+    loadData();
+  }, [user.token]);
 
-      const hasRole = u.roles.includes(role);
-      const newRoles = hasRole
-        ? u.roles.filter((r) => r !== role) // remove it
-        : [...u.roles, role]; // add it
+  async function toggleRole(userId, roleId) {
+    setError("");
 
-      return { ...u, roles: newRoles };
-    });
-    setUsers(updated);
+    // check if mapping already exists
+    const existing = userRoles.find(
+      (ur) => ur.user?.userId === userId && ur.role?.roleId === roleId
+    );
+
+    if (existing) {
+      // delete
+      try {
+        await apiFetch(
+          `/api/user-roles/${existing.userRoleId}`,
+          {
+            method: "DELETE",
+          },
+          user.token
+        );
+        setUserRoles(userRoles.filter((ur) => ur.userRoleId !== existing.userRoleId));
+      } catch {
+        setError("Failed to revoke role from user.");
+      }
+    } else {
+      // create
+      try {
+        const payload = {
+          user: { userId: userId },
+          role: { roleId: roleId },
+        };
+
+        const created = await apiFetch(
+          "/api/user-roles",
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+          user.token
+        );
+
+        setUserRoles([...userRoles, created]);
+      } catch {
+        setError("Failed to assign role to user.");
+      }
+    }
+  }
+
+  function userHasRole(userId, roleId) {
+    return userRoles.some(
+      (ur) => ur.user?.userId === userId && ur.role?.roleId === roleId
+    );
   }
 
   return (
@@ -34,27 +85,31 @@ function RoleAdmin() {
       <p className="roleadmin-subtext">
         Decide what each user is allowed to do in the system
       </p>
+      {error && <p className="roleadmin-error" style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
       <div className="roleadmin-table-card">
         <table className="roleadmin-table">
           <thead>
             <tr>
               <th>User</th>
-              {ALL_ROLES.map((role) => (
-                <th key={role}>{role}</th>
+              {roles.map((role) => (
+                <th key={role.roleId}>{role.roleName}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.username}>
-                <td>{u.username}</td>
-                {ALL_ROLES.map((role) => (
-                  <td key={role} className="roleadmin-checkbox-cell">
+              <tr key={u.userId}>
+                <td>
+                  <strong>{u.fullName}</strong>
+                  <div style={{ fontSize: "0.8rem", color: "#666" }}>@{u.username}</div>
+                </td>
+                {roles.map((role) => (
+                  <td key={role.roleId} className="roleadmin-checkbox-cell">
                     <input
                       type="checkbox"
-                      checked={u.roles.includes(role)}
-                      onChange={() => toggleRole(u.username, role)}
+                      checked={userHasRole(u.userId, role.roleId)}
+                      onChange={() => toggleRole(u.userId, role.roleId)}
                     />
                   </td>
                 ))}
@@ -65,9 +120,7 @@ function RoleAdmin() {
       </div>
 
       <p className="roleadmin-note">
-        Note: this is only editing sample data on this screen for now — it isn't
-        connected to the real login yet. Once Role 5 builds the real login API,
-        this table will control what a user can actually access.
+        Note: Checks represent active user authorization profiles synchronized in real-time with the database.
       </p>
     </div>
   );

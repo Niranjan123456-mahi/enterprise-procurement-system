@@ -26,14 +26,26 @@ function Login({ onLogin }) {
         body: JSON.stringify({ username, password }),
       });
 
+      const backendRoles = login.roles || [];
+      let isAuthorized = false;
+      if (selectedRole === "Requester" && backendRoles.includes("Requester")) isAuthorized = true;
+      if (selectedRole === "Approver" && (backendRoles.includes("Manager") || backendRoles.includes("Finance"))) isAuthorized = true;
+      if (selectedRole === "Goods Receiver" && backendRoles.includes("Receiver")) isAuthorized = true;
+      if (selectedRole === "Procurement Admin" && backendRoles.includes("Admin")) isAuthorized = true;
+
+      if (!isAuthorized) {
+        setError(`You do not have permissions for the selected role: ${selectedRole}`);
+        return;
+      }
+
       onLogin({
         username: login.username,
         role: selectedRole,
         token: login.accessToken,
         roles: login.roles,
       });
-    } catch {
-      setError("Wrong username or password, or the backend is unavailable.");
+    } catch (err) {
+      setError(err.message || "Wrong username or password, or the backend is unavailable.");
     }
   }
 

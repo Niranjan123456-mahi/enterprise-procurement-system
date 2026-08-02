@@ -1,18 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../../api";
 import "./RequisitionForm.css";
 
-function RequisitionForm() {
-  // basic details about the request
+function RequisitionForm({ user }) {
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState("");
   const [neededBy, setNeededBy] = useState("");
   const [justification, setJustification] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+
+  const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // the list of items being requested
   // each line has: description, quantity, unit price
   const [lines, setLines] = useState([
     { description: "", quantity: "1", unitPrice: "0" },
   ]);
+
+  useEffect(() => {
+    async function loadDropdowns() {
+      try {
+        const [cats, sups] = await Promise.all([
+          apiFetch("/api/categories", {}, user.token),
+          apiFetch("/api/suppliers", {}, user.token),
+        ]);
+        setCategories(cats.filter((c) => c.status === "ACTIVE"));
+        setSuppliers(sups.filter((s) => s.status === "ACTIVE"));
+      } catch {
+        setError("Failed to load categories or suppliers dropdowns.");
+      }
+    }
+    loadDropdowns();
+  }, [user.token]);
 
   function addLine() {
     setLines([...lines, { description: "", quantity: "1", unitPrice: "0" }]);
@@ -43,17 +65,63 @@ function RequisitionForm() {
     return total;
   }
 
-  function handleSaveDraft() {
-    alert("Draft saved (not connected to backend yet)");
-  }
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
-  function handleSubmit() {
-    alert("Request submitted for approval (not connected to backend yet)");
+    if (!title || !neededBy || !categoryId) {
+      setError("Please fill out Title, Category, and Needed By date.");
+      return;
+    }
+
+    const invalidLine = lines.some((l) => !l.description || parseFloat(l.quantity) <= 0 || parseFloat(l.unitPrice) < 0);
+    if (invalidLine) {
+      setError("Please ensure all line items have description, valid quantity (>0) and price (>=0).");
+      return;
+    }
+
+    try {
+      const payload = {
+        title: title,
+        justification: justification,
+        neededBy: neededBy,
+        categoryId: parseInt(categoryId),
+        supplierId: supplierId ? parseInt(supplierId) : null,
+        items: lines.map((line) => ({
+          description: line.description,
+          quantity: parseInt(line.quantity),
+          unitPrice: parseFloat(line.unitPrice),
+        })),
+      };
+
+      const result = await apiFetch(
+        "/api/requisitions",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        user.token
+      );
+
+      setSuccess(`Purchase request ${result.requisitionNumber} submitted successfully!`);
+      // reset form
+      setTitle("");
+      setNeededBy("");
+      setJustification("");
+      setCategoryId("");
+      setSupplierId("");
+      setLines([{ description: "", quantity: "1", unitPrice: "0" }]);
+    } catch (err) {
+      setError(err.message || "Failed to submit request.");
+    }
   }
 
   return (
     <div className="req-page">
       <h1>New Purchase Request</h1>
+      {error && <p className="req-error" style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
+      {success && <p className="req-success" style={{ color: "green", marginBottom: "1rem", fontWeight: "bold" }}>{success}</p>}
 
       {/* details section */}
       <div className="req-card">
@@ -65,36 +133,54 @@ function RequisitionForm() {
           placeholder="e.g. Q3 office supplies"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
 
         <div className="req-row">
           <div className="req-col">
-            <label>Department</label>
-            <input
-              type="text"
-              placeholder="Engineering"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            />
+            <label>Category</label>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required>
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c.categoryId} value={c.categoryId}>
+                  {c.categoryName}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="req-col">
-            <label>Needed by</label>
-            <input
-              type="date"
-              value={neededBy}
-              onChange={(e) => setNeededBy(e.target.value)}
-            />
+            <label>Supplier (Optional)</label>
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <option value="">Select Supplier</option>
+              {suppliers.map((s) => (
+                <option key={s.supplierId} value={s.supplierId}>
+                  {s.supplierName}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <label>Justification</label>
-        <textarea
-          rows="3"
-          placeholder="Why do you need this?"
-          value={justification}
-          onChange={(e) => setJustification(e.target.value)}
-        ></textarea>
+        <div style={{ marginTop: "1rem" }}>
+          <label>Needed by</label>
+          <input
+            type="date"
+            value={neededBy}
+            onChange={(e) => setNeededBy(e.target.value)}
+            required
+          />
+        </div>
+
+        <div style={{ marginTop: "1rem" }}>
+          <label>Justification</label>
+          <textarea
+            rows="3"
+            placeholder="Why do you need this?"
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+          ></textarea>
+        </div>
       </div>
 
       {/* line items section */}
@@ -113,18 +199,21 @@ function RequisitionForm() {
               placeholder="Description"
               value={line.description}
               onChange={(e) => updateLine(index, "description", e.target.value)}
+              required
             />
             <input
               type="number"
               placeholder="Qty"
               value={line.quantity}
               onChange={(e) => updateLine(index, "quantity", e.target.value)}
+              required
             />
             <input
               type="number"
               placeholder="Unit price"
               value={line.unitPrice}
               onChange={(e) => updateLine(index, "unitPrice", e.target.value)}
+              required
             />
             <button
               className="req-remove-btn"
@@ -144,9 +233,6 @@ function RequisitionForm() {
 
       {/* action buttons */}
       <div className="req-actions">
-        <button className="req-btn-outline" onClick={handleSaveDraft}>
-          Save draft
-        </button>
         <button className="req-btn-primary" onClick={handleSubmit}>
           Submit for approval
         </button>

@@ -1,44 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../../api";
 import "./SupplierAdmin.css";
 
-function SupplierAdmin() {
-  // fake sample suppliers to start with
-  const [suppliers, setSuppliers] = useState([
-    { name: "Staples India", contact: "Ravi Kumar", email: "ravi@staples.in", phone: "9876543210" },
-    { name: "Dell Technologies", contact: "Priya Shah", email: "priya@dell.com", phone: "9123456780" },
-  ]);
-
-  // form fields for adding a new supplier
+function SupplierAdmin({ user }) {
+  const [suppliers, setSuppliers] = useState([]);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
 
-  function addSupplier() {
+  useEffect(() => {
+    async function loadSuppliers() {
+      try {
+        const data = await apiFetch("/api/suppliers", {}, user.token);
+        const mapped = data.map((item) => ({
+          supplierId: item.supplierId,
+          supplierCode: item.supplierCode,
+          name: item.supplierName,
+          contact: item.contactName,
+          email: item.email,
+          phone: item.phone,
+        }));
+        setSuppliers(mapped);
+      } catch {
+        setError("Failed to load suppliers.");
+      }
+    }
+    loadSuppliers();
+  }, [user.token]);
+
+  async function addSupplier() {
     if (name.trim() === "") {
-      return; // don't add if name is empty
+      return;
     }
 
-    const newSupplier = {
-      name: name,
-      contact: contact,
-      email: email,
-      phone: phone,
-    };
+    try {
+      const code =
+        name
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "")
+          .slice(0, 10) +
+        "_" +
+        Math.floor(Math.random() * 1000);
 
-    setSuppliers([...suppliers, newSupplier]);
+      const payload = {
+        supplierCode: code,
+        supplierName: name,
+        contactName: contact,
+        email: email,
+        phone: phone,
+        status: "ACTIVE",
+      };
 
-    // clear the form after adding
-    setName("");
-    setContact("");
-    setEmail("");
-    setPhone("");
+      const created = await apiFetch(
+        "/api/suppliers",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        user.token
+      );
+
+      const newSupplier = {
+        supplierId: created.supplierId,
+        supplierCode: created.supplierCode,
+        name: created.supplierName,
+        contact: created.contactName,
+        email: created.email,
+        phone: created.phone,
+      };
+
+      setSuppliers([...suppliers, newSupplier]);
+
+      setName("");
+      setContact("");
+      setEmail("");
+      setPhone("");
+      setError("");
+    } catch {
+      setError("Failed to add supplier.");
+    }
   }
 
   return (
     <div className="supplier-page">
       <h1>Suppliers</h1>
       <p className="supplier-subtext">Companies you purchase from</p>
+      {error && <p className="supplier-error">{error}</p>}
 
       {/* add supplier form */}
       <div className="supplier-card">
@@ -71,6 +120,7 @@ function SupplierAdmin() {
         <table className="supplier-table">
           <thead>
             <tr>
+              <th>Code</th>
               <th>Name</th>
               <th>Contact</th>
               <th>Email</th>
@@ -80,11 +130,12 @@ function SupplierAdmin() {
           <tbody>
             {suppliers.length === 0 ? (
               <tr>
-                <td colSpan="4" className="supplier-empty">No suppliers yet.</td>
+                <td colSpan="5" className="supplier-empty">No suppliers yet.</td>
               </tr>
             ) : (
               suppliers.map((s, index) => (
-                <tr key={index}>
+                <tr key={s.supplierId || index}>
+                  <td>{s.supplierCode || "—"}</td>
                   <td>{s.name}</td>
                   <td>{s.contact || "—"}</td>
                   <td>{s.email || "—"}</td>

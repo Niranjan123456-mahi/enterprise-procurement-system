@@ -88,16 +88,16 @@ function App() {
         {activePage === "dashboard" && (
           <Dashboard user={user} onNavigate={setActivePage} />
         )}
-        {activePage === "requisition" && <RequisitionForm />}
-        {activePage === "myrequests" && <MyRequests />}
-        {activePage === "approvals" && <ApprovalDashboard />}
-        {activePage === "orders" && <POTracker />}
-        {activePage === "receiving" && <Receiving />}
-        {activePage === "suppliers" && <SupplierAdmin />}
-        {activePage === "rules" && <ApprovalRuleAdmin />}
-        {activePage === "catalog" && <Catalog />}
-        {activePage === "reports" && <ReportsDashboard />}
-        {activePage === "roleadmin" && <RoleAdmin />}
+        {activePage === "requisition" && <RequisitionForm user={user} />}
+        {activePage === "myrequests" && <MyRequests user={user} />}
+        {activePage === "approvals" && <ApprovalDashboard user={user} />}
+        {activePage === "orders" && <POTracker user={user} />}
+        {activePage === "receiving" && <Receiving user={user} />}
+        {activePage === "suppliers" && <SupplierAdmin user={user} />}
+        {activePage === "rules" && <ApprovalRuleAdmin user={user} />}
+        {activePage === "catalog" && <Catalog user={user} />}
+        {activePage === "reports" && <ReportsDashboard user={user} />}
+        {activePage === "roleadmin" && <RoleAdmin user={user} />}
       </div>
     </div>
   );

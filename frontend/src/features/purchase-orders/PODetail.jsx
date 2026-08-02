@@ -1,13 +1,11 @@
 import { useState } from "react";
 import "./PODetail.css";
 
-function PODetail({ order, onBack }) {
-  // keeps track of what the user types into each "receive" box, per item
+function PODetail({ order, onRecordReceipt, onBack }) {
   const [receiveInputs, setReceiveInputs] = useState({});
 
-  // local copy of items so we can update "received" when marking a delivery
-  const [items, setItems] = useState(order.items);
-  const [receipts, setReceipts] = useState(order.receipts);
+  const items = order.items || [];
+  const receipts = order.receipts || [];
 
   function handleInputChange(index, value) {
     setReceiveInputs({ ...receiveInputs, [index]: value });
@@ -19,24 +17,7 @@ function PODetail({ order, onBack }) {
       return;
     }
 
-    // update the received count for that item
-    const updatedItems = items.map((item, i) => {
-      if (i === index) {
-        return { ...item, received: item.received + qty };
-      }
-      return item;
-    });
-    setItems(updatedItems);
-
-    // add a new entry to the receipt history
-    const newReceipt = {
-      date: new Date().toISOString().slice(0, 10),
-      description: items[index].description,
-      qty: qty,
-    };
-    setReceipts([...receipts, newReceipt]);
-
-    // clear the input box
+    onRecordReceipt(order.poId, items[index].description, qty);
     setReceiveInputs({ ...receiveInputs, [index]: "" });
   }
 

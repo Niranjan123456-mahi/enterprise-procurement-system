@@ -1,76 +1,114 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "../../api";
 import "./Catalog.css";
 
-function Catalog() {
-  // fake sample catalog items
-  const [items, setItems] = useState([
-    { sku: "PAP-001", name: "A4 Paper Box", category: "Office Supplies", unit: "box", unitPrice: 300 },
-    { sku: "LAP-001", name: "Dell Latitude Laptop", category: "IT Hardware", unit: "ea", unitPrice: 37000 },
-  ]);
-
-  const [sku, setSku] = useState("");
+function Catalog({ user }) {
+  const [categories, setCategories] = useState([]);
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [unit, setUnit] = useState("ea");
-  const [unitPrice, setUnitPrice] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("ACTIVE");
+  const [error, setError] = useState("");
 
-  function addItem() {
-    if (name.trim() === "") {
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const data = await apiFetch("/api/categories", {}, user.token);
+        setCategories(data);
+      } catch {
+        setError("Failed to load categories.");
+      }
+    }
+    loadCategories();
+  }, [user.token]);
+
+  async function addCategory() {
+    if (name.trim() === "" || code.trim() === "") {
       return;
     }
 
-    const newItem = {
-      sku: sku,
-      name: name,
-      category: category,
-      unit: unit,
-      unitPrice: parseFloat(unitPrice) || 0,
-    };
+    try {
+      const payload = {
+        categoryCode: code.trim().toUpperCase(),
+        categoryName: name.trim(),
+        description: description.trim(),
+        status: status,
+      };
 
-    setItems([...items, newItem]);
+      const created = await apiFetch(
+        "/api/categories",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        user.token
+      );
 
-    setSku("");
-    setName("");
-    setCategory("");
-    setUnit("ea");
-    setUnitPrice("");
+      setCategories([...categories, created]);
+
+      setCode("");
+      setName("");
+      setDescription("");
+      setStatus("ACTIVE");
+      setError("");
+    } catch {
+      setError("Failed to add category. Code might already exist.");
+    }
   }
 
   return (
     <div className="cat-page">
-      <h1>Catalog</h1>
-      <p className="cat-subtext">Reusable items with standard pricing</p>
+      <h1>Category Catalog</h1>
+      <p className="cat-subtext">Product categories with approval configurations</p>
+      {error && <p className="cat-error" style={{ color: "var(--danger-color, red)", marginBottom: "1rem" }}>{error}</p>}
 
       <div className="cat-card">
-        <h2>Add Item</h2>
+        <h2>Add Category</h2>
         <div className="cat-form-grid">
           <div>
-            <label>SKU</label>
-            <input value={sku} onChange={(e) => setSku(e.target.value)} />
+            <label>Category Code</label>
+            <input
+              placeholder="e.g. CAT006"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
           </div>
           <div>
             <label>Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label>Category</label>
-            <input value={category} onChange={(e) => setCategory(e.target.value)} />
-          </div>
-          <div>
-            <label>Unit</label>
-            <input value={unit} onChange={(e) => setUnit(e.target.value)} />
-          </div>
-          <div>
-            <label>Unit price (₹)</label>
             <input
-              type="number"
-              value={unitPrice}
-              onChange={(e) => setUnitPrice(e.target.value)}
+              placeholder="e.g. IT Hardware"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
+          <div>
+            <label>Description</label>
+            <input
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div>
+            <label>Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
         </div>
-        <button className="cat-add-btn" onClick={addItem} disabled={!name}>
-          Add item
+        <button className="cat-add-btn" onClick={addCategory} disabled={!name || !code}>
+          Add Category
         </button>
       </div>
 
@@ -78,26 +116,39 @@ function Catalog() {
         <table className="cat-table">
           <thead>
             <tr>
-              <th>SKU</th>
+              <th>ID</th>
+              <th>Code</th>
               <th>Name</th>
-              <th>Category</th>
-              <th>Unit</th>
-              <th>Unit Price</th>
+              <th>Description</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 ? (
+            {categories.length === 0 ? (
               <tr>
-                <td colSpan="5" className="cat-empty">No items yet.</td>
+                <td colSpan="5" className="cat-empty">No categories yet.</td>
               </tr>
             ) : (
-              items.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.sku || "—"}</td>
-                  <td>{item.name}</td>
-                  <td>{item.category || "—"}</td>
-                  <td>{item.unit}</td>
-                  <td>₹ {item.unitPrice.toLocaleString()}</td>
+              categories.map((cat, index) => (
+                <tr key={cat.categoryId || index}>
+                  <td>{cat.categoryId}</td>
+                  <td>{cat.categoryCode}</td>
+                  <td>{cat.categoryName}</td>
+                  <td>{cat.description || "—"}</td>
+                  <td>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        backgroundColor: cat.status === "ACTIVE" ? "#e6f4ea" : "#fce8e6",
+                        color: cat.status === "ACTIVE" ? "#137333" : "#c5221f",
+                      }}
+                    >
+                      {cat.status}
+                    </span>
+                  </td>
                 </tr>
               ))
             )}
