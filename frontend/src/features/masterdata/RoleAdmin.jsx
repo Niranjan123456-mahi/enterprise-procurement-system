@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./RoleAdmin.css";
 
-const ALL_ROLES = ["Requester", "Approver", "Receiver", "Admin"];
+const ALL_ROLES = ["Requester", "Approver", "Goods Receiver", "Procurement Admin"];
 
 function RoleAdmin() {
   // fake sample users and the roles currently assigned to them

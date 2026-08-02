@@ -15,47 +15,56 @@ import ReportsDashboard from "./features/analytics/ReportsDashboard";
 import Sidebar from "./components/Sidebar";
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = sessionStorage.getItem("procurement-user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [activePage, setActivePage] = useState("dashboard");
   const [showLogin, setShowLogin] = useState(false);
 
-  // show the marketing landing page first, before any login
   if (user === null && !showLogin) {
     return <LandingPage onSignIn={() => setShowLogin(true)} />;
   }
 
   if (user === null) {
-    return <Login onLogin={setUser} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   function handleLogout() {
+    sessionStorage.removeItem("procurement-user");
     setUser(null);
     setShowLogin(false);
     setActivePage("dashboard");
   }
 
-  let navItems = [{ key: "dashboard", label: "Dashboard", icon: "📊" }];
-
-  if (user.role === "Requester") {
-    navItems.push(
-      { key: "requisition", label: "New Request", icon: "📝" },
-      { key: "myrequests", label: "My Requests", icon: "📋" }
-    );
+  function handleLogin(userDetails) {
+    sessionStorage.setItem("procurement-user", JSON.stringify(userDetails));
+    setUser(userDetails);
   }
 
-  if (user.role === "Approver" || user.role === "Admin") {
+  let navItems = [{ key: "dashboard", label: "Dashboard", icon: "📊" }];
+
+  // everyone, no matter what role, can raise a request for themselves
+  navItems.push(
+    { key: "requisition", label: "New Request", icon: "📝" },
+    { key: "myrequests", label: "My Requests", icon: "📋" }
+  );
+
+  // approvers (and procurement admins) get the Approvals screen
+  if (user.role === "Approver" || user.role === "Procurement Admin") {
     navItems.push({ key: "approvals", label: "Approvals", icon: "✅" });
   }
 
-  if (user.role === "Approver" || user.role === "Admin" || user.role === "Receiver") {
-    navItems.push({ key: "orders", label: "Purchase Orders", icon: "📦" });
+  // goods receivers (and procurement admins) get purchase order tracking + receiving
+  if (user.role === "Goods Receiver" || user.role === "Procurement Admin") {
+    navItems.push(
+      { key: "orders", label: "Purchase Orders", icon: "📦" },
+      { key: "receiving", label: "Receiving", icon: "🚚" }
+    );
   }
 
-  if (user.role === "Receiver" || user.role === "Admin") {
-    navItems.push({ key: "receiving", label: "Receiving", icon: "🚚" });
-  }
-
-  if (user.role === "Admin") {
+  // only procurement admins get the full admin/setup screens
+  if (user.role === "Procurement Admin") {
     navItems.push(
       { key: "suppliers", label: "Suppliers", icon: "🏢" },
       { key: "rules", label: "Approval Rules", icon: "⚖️" },
