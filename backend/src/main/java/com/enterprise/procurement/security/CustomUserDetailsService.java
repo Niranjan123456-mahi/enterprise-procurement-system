@@ -23,12 +23,19 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CustomUserDetailsService.class);
+
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("[USER_DETAILS_SERVICE] Loading user details for: {}", username);
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+                .orElseThrow(() -> {
+                    log.error("[USER_DETAILS_SERVICE] User not found with username: {}", username);
+                    return new UsernameNotFoundException("User not found with username: " + username);
+                });
 
+        log.info("[USER_DETAILS_SERVICE] User found: {}. Status: {}", username, user.getStatus());
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPasswordHash(),

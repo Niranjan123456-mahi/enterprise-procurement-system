@@ -1,10 +1,14 @@
 package com.enterprise.procurement.controller;
 
+import com.enterprise.procurement.dto.RequisitionActionRequest;
+import com.enterprise.procurement.dto.RequisitionApprovalRequest;
+import com.enterprise.procurement.dto.RequisitionCreateRequest;
 import com.enterprise.procurement.entity.Requisition;
 import com.enterprise.procurement.service.RequisitionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +25,16 @@ public class RequisitionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Requisition>> getAll() {
+    public ResponseEntity<List<Requisition>> getAll(@RequestParam(required = false) String status) {
+        if (status != null && !status.isBlank()) {
+            return ResponseEntity.ok(service.findByStatus(status));
+        }
         return ResponseEntity.ok(service.findAll());
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Requisition>> getMyRequests(Authentication authentication) {
+        return ResponseEntity.ok(service.findMyRequisitions(authentication.getName()));
     }
 
     @GetMapping("/{id}")
@@ -30,9 +42,47 @@ public class RequisitionController {
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<List<Requisition>> getPendingForMe(Authentication authentication) {
+        return ResponseEntity.ok(service.findPendingForApprover(authentication.getName()));
+    }
+
     @PostMapping
-    public ResponseEntity<Requisition> create(@Valid @RequestBody Requisition requisition) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(requisition));
+    public ResponseEntity<Requisition> create(@Valid @RequestBody RequisitionCreateRequest request,
+                                              Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.create(request, authentication.getName()));
+    }
+
+    @PostMapping("/{id}/actions")
+    public ResponseEntity<Requisition> actOnRequisition(@PathVariable Long id,
+                                                        @Valid @RequestBody RequisitionActionRequest request,
+                                                        Authentication authentication) {
+        return ResponseEntity.ok(service.actOnRequisition(id, request, authentication.getName()));
+    }
+
+    @RequestMapping(value = "/{id}/approve", method = {RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<Requisition> approve(@PathVariable Long id,
+                                               @RequestBody(required = false) RequisitionApprovalRequest request,
+                                               Authentication authentication) {
+        RequisitionActionRequest actionReq = new RequisitionActionRequest();
+        actionReq.setAction("APPROVE");
+        if (request != null) {
+            actionReq.setRemarks(request.getRemarks());
+        }
+        return ResponseEntity.ok(service.actOnRequisition(id, actionReq, authentication.getName()));
+    }
+
+    @RequestMapping(value = "/{id}/reject", method = {RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<Requisition> reject(@PathVariable Long id,
+                                              @RequestBody(required = false) RequisitionApprovalRequest request,
+                                              Authentication authentication) {
+        RequisitionActionRequest actionReq = new RequisitionActionRequest();
+        actionReq.setAction("REJECT");
+        if (request != null) {
+            actionReq.setRemarks(request.getRemarks());
+        }
+        return ResponseEntity.ok(service.actOnRequisition(id, actionReq, authentication.getName()));
     }
 
     @PutMapping("/{id}")
