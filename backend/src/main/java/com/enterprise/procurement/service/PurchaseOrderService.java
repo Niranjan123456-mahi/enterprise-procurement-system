@@ -3,7 +3,9 @@ package com.enterprise.procurement.service;
 import com.enterprise.procurement.entity.POLineItem;
 import com.enterprise.procurement.entity.PurchaseOrder;
 import com.enterprise.procurement.entity.Requisition;
+import com.enterprise.procurement.entity.RequisitionStatus;
 import com.enterprise.procurement.repository.PurchaseOrderRepository;
+import com.enterprise.procurement.repository.RequisitionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,8 +16,11 @@ import java.util.stream.Collectors;
 @Service
 public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
 
-    public PurchaseOrderService(PurchaseOrderRepository repository) {
+    private final RequisitionRepository requisitionRepository;
+
+    public PurchaseOrderService(PurchaseOrderRepository repository, RequisitionRepository requisitionRepository) {
         super(repository);
+        this.requisitionRepository = requisitionRepository;
     }
 
     @Transactional
@@ -44,7 +49,12 @@ public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
             po.setLineItems(poLineItems);
         }
 
-        return repository.save(po);
+        PurchaseOrder savedPo = repository.save(po);
+
+        requisition.setStatus(RequisitionStatus.ORDER_CREATED);
+        requisitionRepository.save(requisition);
+
+        return savedPo;
     }
 
     public PurchaseOrder update(Long id, PurchaseOrder purchaseOrder) {

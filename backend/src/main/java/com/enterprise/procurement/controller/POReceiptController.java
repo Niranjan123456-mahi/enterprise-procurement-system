@@ -19,7 +19,6 @@ import java.util.List;
 @CrossOrigin("*")
 @Tag(name = "PO Receipts", description = "Endpoints for managing goods receipt notes and updating PO delivery statuses")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAnyRole('Admin', 'Receiver')")
 public class POReceiptController {
 
     private final POReceiptService service;
@@ -30,24 +29,28 @@ public class POReceiptController {
 
     @GetMapping
     @Operation(summary = "Get all PO receipts", description = "Retrieve a list of all purchase order receipts")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<List<POReceipt>> getAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get PO receipt by ID", description = "Retrieve details of a specific receipt by ID")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<POReceipt> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
     @PostMapping
     @Operation(summary = "Create PO receipt", description = "Record goods received against a PO and automatically update PO delivery status (CREATED, PARTIALLY_DELIVERED, FULLY_DELIVERED)")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
     public ResponseEntity<POReceipt> create(@Valid @RequestBody POReceipt receipt, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.saveReceipt(receipt, authentication.getName()));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update PO receipt", description = "Update details of an existing receipt and recalculate PO delivery status")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
     public ResponseEntity<POReceipt> update(@PathVariable Long id,
                                            @Valid @RequestBody POReceipt receipt) {
         return ResponseEntity.ok(service.update(id, receipt));
@@ -55,6 +58,7 @@ public class POReceiptController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete PO receipt", description = "Delete a receipt and recalculate PO delivery status")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

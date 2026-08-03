@@ -91,12 +91,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         requisition.setJustification(request.getJustification());
         requisition.setNeededBy(request.getNeededBy());
         requisition.setTotalAmount(totalAmount);
-        // No matching rule at all = nothing to approve, goes straight to SUBMITTED.
-        // (Worth confirming with your team whether this should really be an
-        // auto-approval path or should require manual admin review instead.)
-        requisition.setStatus(matchingRule.isPresent()
-                ? RequisitionStatus.PENDING_APPROVAL
-                : RequisitionStatus.SUBMITTED);
+        requisition.setStatus(RequisitionStatus.PENDING_APPROVAL);
 
         List<RequisitionLineItem> lineItems = request.getItems().stream()
                 .map(item -> RequisitionLineItem.builder()
@@ -129,6 +124,26 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     // APPROVE / REJECT  — now a real ordered multi-step chain
     // ---------------------------------------------------------------
 
+    private List<Long> getApprovalChainRoleIds(Requisition requisition) {
+        Optional<ApprovalRule> ruleOpt = approvalRuleRepository.findMatchingRule(
+                requisition.getDepartment().getDepartmentId(),
+                requisition.getCategory().getCategoryId(),
+                requisition.getTotalAmount());
+        
+        if (ruleOpt.isPresent()) {
+            List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
+                    .findByRule_RuleIdOrderBySequenceNoAsc(ruleOpt.get().getRuleId());
+            if (!chain.isEmpty()) {
+                return chain.stream()
+                        .map(approver -> approver.getRole().getRoleId())
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        // Fallback chain: Manager (Role ID 3) -> Finance (Role ID 4)
+        return List.of(3L, 4L);
+    }
+
     @Transactional
     public Requisition actOnRequisition(Long id, RequisitionActionRequest request, String username) {
         Requisition requisition = findById(id);
@@ -139,42 +154,33 @@ public class RequisitionService extends BaseService<Requisition, Long> {
             throw new BadRequestException("Only requisitions pending approval can be acted upon");
         }
 
-        // 1. Find the rule that governs this requisition
-        ApprovalRule rule = approvalRuleRepository
-                .findMatchingRule(requisition.getDepartment().getDepartmentId(),
-                        requisition.getCategory().getCategoryId(),
-                        requisition.getTotalAmount())
-                .orElseThrow(() -> new BadRequestException(
-                        "No approval rule found for this requisition — cannot determine approver chain"));
+        List<Long> chainRoleIds = getApprovalChainRoleIds(requisition);
 
-        // 2. Get the ordered chain of required roles for that rule
-        List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
-                .findByRule_RuleIdOrderBySequenceNoAsc(rule.getRuleId());
-
-        if (chain.isEmpty()) {
-            throw new BadRequestException("Approval rule " + rule.getRuleId() + " has no approvers configured");
-        }
-
-        // 3. Figure out which step we're on by counting completed "Approved" steps so far
+        // Figure out which step we're on by counting completed "Approved" steps so far
         long completedSteps = requisitionHistoryRepository
                 .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
 
-        if (completedSteps >= chain.size()) {
+        if (completedSteps >= chainRoleIds.size()) {
             throw new BadRequestException("This requisition has already completed its approval chain");
         }
 
-        ApprovalRuleApprover currentStep = chain.get((int) completedSteps);
-        Long requiredRoleId = currentStep.getRole().getRoleId();
+        Long requiredRoleId = chainRoleIds.get((int) completedSteps);
 
-        // 4. Confirm the logged-in user actually holds the role required for THIS step
-        //    (not just "any approver role" — must be the correct one, in order)
+        // Confirm the logged-in user actually holds the role required for THIS step
         boolean isCorrectApprover = user.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleId().equals(requiredRoleId));
 
-        if (!isCorrectApprover) {
+        boolean isAdmin = user.getUserRoles().stream()
+                .anyMatch(userRole -> "Admin".equalsIgnoreCase(userRole.getRole().getRoleName()));
+
+        if (!isCorrectApprover && !isAdmin) {
+            String requiredRoleName = "Role ID " + requiredRoleId;
+            if (requiredRoleId == 3L) requiredRoleName = "Manager";
+            else if (requiredRoleId == 4L) requiredRoleName = "Finance";
+            
             throw new AccessDeniedException(
                     "This requisition is currently awaiting approval from role: "
-                            + currentStep.getRole().getRoleName() + ". You are not authorized to act on it yet.");
+                            + requiredRoleName + ". You are not authorized to act on it yet.");
         }
 
         String action = request.getAction().trim().toUpperCase();
@@ -182,7 +188,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         if ("APPROVE".equals(action) || "APPROVED".equals(action)) {
             createHistory(requisition, user, "Approved", request.getRemarks());
 
-            boolean wasLastStep = (completedSteps + 1) == chain.size();
+            boolean wasLastStep = (completedSteps + 1) == chainRoleIds.size();
             if (wasLastStep) {
                 requisition.setStatus(RequisitionStatus.APPROVED);
                 eventPublisher.publishEvent(new RequisitionApprovedEvent(this, requisition));
@@ -233,12 +239,19 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
 
+        List<Requisition> pending = ((RequisitionRepository) repository)
+                .findByStatusOrderByCreatedAtDesc(RequisitionStatus.PENDING_APPROVAL);
+
+        boolean isAdmin = user.getUserRoles().stream()
+                .anyMatch(userRole -> "Admin".equalsIgnoreCase(userRole.getRole().getRoleName()));
+
+        if (isAdmin) {
+            return pending; // Admins see everything pending!
+        }
+
         List<Long> userRoleIds = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getRoleId())
                 .collect(Collectors.toList());
-
-        List<Requisition> pending = ((RequisitionRepository) repository)
-                .findByStatusOrderByCreatedAtDesc(RequisitionStatus.PENDING_APPROVAL);
 
         return pending.stream()
                 .filter(req -> isCurrentUsersTurn(req, userRoleIds))
@@ -246,22 +259,13 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     }
 
     private boolean isCurrentUsersTurn(Requisition requisition, List<Long> userRoleIds) {
-        Optional<ApprovalRule> ruleOpt = approvalRuleRepository.findMatchingRule(
-                requisition.getDepartment().getDepartmentId(),
-                requisition.getCategory().getCategoryId(),
-                requisition.getTotalAmount());
-
-        if (ruleOpt.isEmpty()) return false;
-
-        List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
-                .findByRule_RuleIdOrderBySequenceNoAsc(ruleOpt.get().getRuleId());
-        if (chain.isEmpty()) return false;
+        List<Long> chainRoleIds = getApprovalChainRoleIds(requisition);
 
         long completedSteps = requisitionHistoryRepository
                 .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
-        if (completedSteps >= chain.size()) return false;
+        if (completedSteps >= chainRoleIds.size()) return false;
 
-        Long requiredRoleId = chain.get((int) completedSteps).getRole().getRoleId();
+        Long requiredRoleId = chainRoleIds.get((int) completedSteps);
         return userRoleIds.contains(requiredRoleId);
     }
 

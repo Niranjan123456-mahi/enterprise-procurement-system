@@ -18,7 +18,6 @@ import java.util.List;
 @CrossOrigin("*")
 @Tag(name = "Purchase Orders", description = "Endpoints for managing Purchase Orders")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
 public class PurchaseOrderController {
 
     private final PurchaseOrderService service;
@@ -29,24 +28,28 @@ public class PurchaseOrderController {
 
     @GetMapping
     @Operation(summary = "Get all purchase orders", description = "Retrieve a list of all purchase orders")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<List<PurchaseOrder>> getAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get purchase order by ID", description = "Retrieve details of a specific purchase order by ID")
+    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<PurchaseOrder> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
     @PostMapping
     @Operation(summary = "Manual purchase order creation (Disabled)", description = "Manual PO creation is disabled. POs are created automatically when requisitions are approved.")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<PurchaseOrder> create(@Valid @RequestBody PurchaseOrder order) {
         throw new BadRequestException("Manual Purchase Order creation is not allowed. Purchase Orders are generated automatically upon requisition approval.");
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update purchase order", description = "Update details of an existing purchase order")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<PurchaseOrder> update(@PathVariable Long id,
                                                 @Valid @RequestBody PurchaseOrder order) {
         return ResponseEntity.ok(service.update(id, order));
@@ -54,6 +57,7 @@ public class PurchaseOrderController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete purchase order", description = "Delete a purchase order by ID")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

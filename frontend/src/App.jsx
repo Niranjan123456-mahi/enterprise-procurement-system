@@ -41,38 +41,31 @@ function App() {
   function handleLogin(userDetails) {
     sessionStorage.setItem("procurement-user", JSON.stringify(userDetails));
     setUser(userDetails);
-    if (userDetails.role === "Requester") {
-      setActivePage("requisition");
-    } else if (userDetails.role === "Approver") {
-      setActivePage("approvals");
-    } else if (userDetails.role === "Finance") {
-      setActivePage("financedash");
-    } else if (userDetails.role === "Goods Receiver") {
-      setActivePage("receiving");
-    } else {
-      setActivePage("dashboard");
-    }
+    setActivePage("dashboard");
   }
 
   let navItems = [];
 
   if (user.role === "Requester") {
     navItems.push(
+      { key: "dashboard", label: "Dashboard", icon: "📊" },
       { key: "requisition", label: "New Request", icon: "📝" },
       { key: "myrequests", label: "My Requests", icon: "📋" }
     );
   } else if (user.role === "Approver") {
     navItems.push(
+      { key: "dashboard", label: "Dashboard", icon: "📊" },
       { key: "approvals", label: "Approvals", icon: "✅" }
     );
   } else if (user.role === "Finance") {
     navItems.push(
-      { key: "financedash", label: "Finance Dashboard", icon: "📊" },
+      { key: "dashboard", label: "Dashboard", icon: "📊" },
       { key: "approvals", label: "Finance Approvals", icon: "✅" },
       { key: "reports", label: "Spend Reports", icon: "📈" }
     );
   } else if (user.role === "Goods Receiver") {
     navItems.push(
+      { key: "dashboard", label: "Dashboard", icon: "📊" },
       { key: "orders", label: "Purchase Orders", icon: "📦" },
       { key: "receiving", label: "Receiving", icon: "🚚" }
     );
@@ -116,7 +109,6 @@ function App() {
         {activePage === "catalog" && <Catalog user={user} />}
         {activePage === "reports" && <ReportsDashboard user={user} />}
         {activePage === "roleadmin" && <RoleAdmin user={user} />}
-        {activePage === "financedash" && <FinanceDashboard user={user} />}
       </div>
     </div>
   );
