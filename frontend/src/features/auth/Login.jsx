@@ -5,6 +5,7 @@ import "./Login.css";
 const ROLES = [
   { key: "Requester", label: "Requester" },
   { key: "Approver", label: "Approver" },
+  { key: "Finance", label: "Finance" },
   { key: "Goods Receiver", label: "Goods Receiver" },
   { key: "Procurement Admin", label: "Procurement Admin" },
 ];
@@ -30,6 +31,7 @@ function Login({ onLogin }) {
       let isAuthorized = false;
       if (selectedRole === "Requester" && backendRoles.includes("Requester")) isAuthorized = true;
       if (selectedRole === "Approver" && (backendRoles.includes("Manager") || backendRoles.includes("Finance"))) isAuthorized = true;
+      if (selectedRole === "Finance" && backendRoles.includes("Finance")) isAuthorized = true;
       if (selectedRole === "Goods Receiver" && backendRoles.includes("Receiver")) isAuthorized = true;
       if (selectedRole === "Procurement Admin" && backendRoles.includes("Admin")) isAuthorized = true;
 

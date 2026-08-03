@@ -30,6 +30,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     private final ApprovalRuleRepository approvalRuleRepository;
     private final ApprovalRuleApproverRepository approvalRuleApproverRepository;
     private final RequisitionHistoryRepository requisitionHistoryRepository;
+    private final AuditLogRepository auditLogRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public RequisitionService(RequisitionRepository repository,
@@ -40,6 +41,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                               ApprovalRuleRepository approvalRuleRepository,
                               ApprovalRuleApproverRepository approvalRuleApproverRepository,
                               RequisitionHistoryRepository requisitionHistoryRepository,
+                              AuditLogRepository auditLogRepository,
                               ApplicationEventPublisher eventPublisher) {
         super(repository);
         this.userRepository = userRepository;
@@ -49,6 +51,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         this.approvalRuleRepository = approvalRuleRepository;
         this.approvalRuleApproverRepository = approvalRuleApproverRepository;
         this.requisitionHistoryRepository = requisitionHistoryRepository;
+        this.auditLogRepository = auditLogRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -107,6 +110,18 @@ public class RequisitionService extends BaseService<Requisition, Long> {
 
         Requisition savedRequisition = save(requisition);
         createHistory(savedRequisition, user, "Submitted", "Request submitted for approval");
+
+        // Save AuditLog
+        AuditLog audit = AuditLog.builder()
+                .user(user)
+                .module("Requisition")
+                .action("CREATE")
+                .entityName("Requisition")
+                .entityId(savedRequisition.getRequisitionId())
+                .remarks("Created Requisition " + savedRequisition.getRequisitionNumber())
+                .build();
+        auditLogRepository.save(audit);
+
         return savedRequisition;
     }
 
@@ -183,7 +198,20 @@ public class RequisitionService extends BaseService<Requisition, Long> {
             throw new BadRequestException("Action must be either APPROVE or REJECT");
         }
 
-        return save(requisition);
+        Requisition savedRequisition = save(requisition);
+
+        // Save AuditLog
+        AuditLog audit = AuditLog.builder()
+                .user(user)
+                .module("Approval")
+                .action(action)
+                .entityName("Requisition")
+                .entityId(savedRequisition.getRequisitionId())
+                .remarks("Requisition " + action + " by " + user.getUsername() + (request.getRemarks() != null ? " — " + request.getRemarks() : ""))
+                .build();
+        auditLogRepository.save(audit);
+
+        return savedRequisition;
     }
 
     // ---------------------------------------------------------------

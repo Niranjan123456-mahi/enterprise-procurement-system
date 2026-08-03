@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -25,6 +26,7 @@ public class RequisitionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('Admin', 'Finance')")
     public ResponseEntity<List<Requisition>> getAll(@RequestParam(required = false) String status) {
         if (status != null && !status.isBlank()) {
             return ResponseEntity.ok(service.findByStatus(status));
@@ -43,6 +45,7 @@ public class RequisitionController {
     }
 
     @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('Admin', 'Manager', 'Finance')")
     public ResponseEntity<List<Requisition>> getPendingForMe(Authentication authentication) {
         return ResponseEntity.ok(service.findPendingForApprover(authentication.getName()));
     }
@@ -55,6 +58,7 @@ public class RequisitionController {
     }
 
     @PostMapping("/{id}/actions")
+    @PreAuthorize("hasAnyRole('Admin', 'Manager', 'Finance')")
     public ResponseEntity<Requisition> actOnRequisition(@PathVariable Long id,
                                                         @Valid @RequestBody RequisitionActionRequest request,
                                                         Authentication authentication) {
@@ -62,6 +66,7 @@ public class RequisitionController {
     }
 
     @RequestMapping(value = "/{id}/approve", method = {RequestMethod.POST, RequestMethod.PUT})
+    @PreAuthorize("hasAnyRole('Admin', 'Manager', 'Finance')")
     public ResponseEntity<Requisition> approve(@PathVariable Long id,
                                                @RequestBody(required = false) RequisitionApprovalRequest request,
                                                Authentication authentication) {
@@ -74,6 +79,7 @@ public class RequisitionController {
     }
 
     @RequestMapping(value = "/{id}/reject", method = {RequestMethod.POST, RequestMethod.PUT})
+    @PreAuthorize("hasAnyRole('Admin', 'Manager', 'Finance')")
     public ResponseEntity<Requisition> reject(@PathVariable Long id,
                                               @RequestBody(required = false) RequisitionApprovalRequest request,
                                               Authentication authentication) {
@@ -86,12 +92,14 @@ public class RequisitionController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Requisition> update(@PathVariable Long id,
                                               @Valid @RequestBody Requisition requisition) {
         return ResponseEntity.ok(service.update(id, requisition));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

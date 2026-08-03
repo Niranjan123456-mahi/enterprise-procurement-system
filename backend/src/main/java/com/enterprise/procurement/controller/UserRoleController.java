@@ -7,11 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/user-roles")
 @CrossOrigin("*")
+@PreAuthorize("hasRole('Admin')")
 public class UserRoleController {
 
     private final UserRoleService service;

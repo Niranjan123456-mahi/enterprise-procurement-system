@@ -10,15 +10,45 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import com.enterprise.procurement.entity.*;
+import com.enterprise.procurement.repository.*;
+import com.enterprise.procurement.exception.ResourceNotFoundException;
+
 @Service
 public class POReceiptService extends BaseService<POReceipt, Long> {
 
     private final PurchaseOrderRepository purchaseOrderRepository;
+    private final UserRepository userRepository;
+    private final AuditLogRepository auditLogRepository;
 
     public POReceiptService(POReceiptRepository repository,
-                            PurchaseOrderRepository purchaseOrderRepository) {
+                            PurchaseOrderRepository purchaseOrderRepository,
+                            UserRepository userRepository,
+                            AuditLogRepository auditLogRepository) {
         super(repository);
         this.purchaseOrderRepository = purchaseOrderRepository;
+        this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
+    }
+
+    @Transactional
+    public POReceipt saveReceipt(POReceipt receipt, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+        receipt.setReceivedBy(user);
+        POReceipt saved = save(receipt);
+
+        AuditLog audit = AuditLog.builder()
+                .user(user)
+                .module("Receiving")
+                .action("RECEIVE")
+                .entityName("Purchase Order")
+                .entityId(saved.getPurchaseOrder().getPoId())
+                .remarks("Received " + saved.getQtyReceived() + " units of " + saved.getDescription())
+                .build();
+        auditLogRepository.save(audit);
+
+        return saved;
     }
 
     @Override

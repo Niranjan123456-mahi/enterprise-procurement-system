@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import java.util.List;
 
 @RestController
@@ -17,6 +19,7 @@ import java.util.List;
 @CrossOrigin("*")
 @Tag(name = "PO Receipts", description = "Endpoints for managing goods receipt notes and updating PO delivery statuses")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasAnyRole('Admin', 'Receiver')")
 public class POReceiptController {
 
     private final POReceiptService service;
@@ -39,8 +42,8 @@ public class POReceiptController {
 
     @PostMapping
     @Operation(summary = "Create PO receipt", description = "Record goods received against a PO and automatically update PO delivery status (CREATED, PARTIALLY_DELIVERED, FULLY_DELIVERED)")
-    public ResponseEntity<POReceipt> create(@Valid @RequestBody POReceipt receipt) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(receipt));
+    public ResponseEntity<POReceipt> create(@Valid @RequestBody POReceipt receipt, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.saveReceipt(receipt, authentication.getName()));
     }
 
     @PutMapping("/{id}")

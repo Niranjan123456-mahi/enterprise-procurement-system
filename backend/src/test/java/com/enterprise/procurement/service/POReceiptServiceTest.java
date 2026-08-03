@@ -5,6 +5,8 @@ import com.enterprise.procurement.entity.POReceipt;
 import com.enterprise.procurement.entity.PurchaseOrder;
 import com.enterprise.procurement.repository.POReceiptRepository;
 import com.enterprise.procurement.repository.PurchaseOrderRepository;
+import com.enterprise.procurement.repository.UserRepository;
+import com.enterprise.procurement.repository.AuditLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +30,12 @@ class POReceiptServiceTest {
 
     @Mock
     private PurchaseOrderRepository purchaseOrderRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private AuditLogRepository auditLogRepository;
 
     @InjectMocks
     private POReceiptService poReceiptService;

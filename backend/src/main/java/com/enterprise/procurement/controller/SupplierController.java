@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -31,17 +32,20 @@ public class SupplierController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Supplier> create(@Valid @RequestBody Supplier supplier) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(supplier));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Supplier> update(@PathVariable Long id,
                                            @Valid @RequestBody Supplier supplier) {
         return ResponseEntity.ok(service.update(id, supplier));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

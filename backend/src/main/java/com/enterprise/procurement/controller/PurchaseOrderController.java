@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -17,6 +18,7 @@ import java.util.List;
 @CrossOrigin("*")
 @Tag(name = "Purchase Orders", description = "Endpoints for managing Purchase Orders")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
 public class PurchaseOrderController {
 
     private final PurchaseOrderService service;

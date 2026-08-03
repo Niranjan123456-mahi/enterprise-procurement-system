@@ -49,6 +49,9 @@ class RequisitionServiceTest {
     private RequisitionHistoryRepository requisitionHistoryRepository;
 
     @Mock
+    private AuditLogRepository auditLogRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
