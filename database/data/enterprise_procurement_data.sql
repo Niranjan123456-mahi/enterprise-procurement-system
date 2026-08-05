@@ -113,11 +113,11 @@ COPY public.approval_rule_approvers (rule_approver_id, rule_id, sequence_no, rol
 --
 
 COPY public.users (user_id, department_id, employee_id, username, password_hash, full_name, email, phone, designation, status, created_at) FROM stdin;
-1	1	EMP001	admin	$2a$10$izskd6gIgRoB/nMwB2FtJOTISNFIFx55THLoymHNhFH7hLKPNE7Rm	System Admin	admin@company.com	9876500001	Administrator	ACTIVE	2026-07-26 17:26:12.748156
-2	1	EMP002	manager1	$2a$10$s09Et4kA9qBtZpOInGAC4.v5vpP7P8cx2F6jhiWUyHf5WDqf80Vme	IT Manager	manager@company.com	9876500002	Manager	ACTIVE	2026-07-26 17:26:12.748156
-3	2	EMP003	finance1	$2a$10$wwSK2Hn38ZFee1t8FQ6m1.77JskwABCBruor2UM/rV4qP6JxggQBS	Finance Officer	finance@company.com	9876500003	Finance	ACTIVE	2026-07-26 17:26:12.748156
-4	1	EMP004	requester1	$2a$10$NHyyGz250coe1QH6c2yjuOVnyUwg7oZaUNW6D0Oqov46461FM2Rhy	John Doe	john@company.com	9876500004	Employee	ACTIVE	2026-07-26 17:26:12.748156
-5	4	EMP005	receiver1	$2a$10$ZJLXiWwAhoNhtSSMFfp0BeGCq2k0A32Y/8zqS3jsvNZZq6j92QcuK	Warehouse User	receiver@company.com	9876500005	Receiver	ACTIVE	2026-07-26 17:26:12.748156
+1	1	EMP001	admin	$2b$10$UUnqpLjVbmiWnLGMKlgvR.vaFlh3G3Kt0suKrxGS7sI66Vf58UJV.	System Admin	admin@company.com	9876500001	Administrator	ACTIVE	2026-07-26 17:26:12.748156
+2	1	EMP002	manager1	$2b$10$eCkLbMyGpBTnyL01ZXmRvuj5cCoJcm98kkt5Oe5cwoeqvuPtodpHq	IT Manager	manager@company.com	9876500002	Manager	ACTIVE	2026-07-26 17:26:12.748156
+3	2	EMP003	finance1	$2b$10$Iv4LPG/Wc/ahD5GXsOBKku/bgbcDz.l50JYCaqDADclAoDui1F/nm	Finance Officer	finance@company.com	9876500003	Finance	ACTIVE	2026-07-26 17:26:12.748156
+4	1	EMP004	requester1	$2b$10$szb4BYNh3R96eJ99AXXur.4u0VOp9ewN3tn.eGjThKJMMpUiI33Jm	John Doe	john@company.com	9876500004	Employee	ACTIVE	2026-07-26 17:26:12.748156
+5	4	EMP005	receiver1	$2b$10$Bh0HZxJ4nSfD5qi6FHm6QuTZawuWskjPi/8f.dKMN4R/8XAMb4N22	Warehouse User	receiver@company.com	9876500005	Receiver	ACTIVE	2026-07-26 17:26:12.748156
 \.
 
 

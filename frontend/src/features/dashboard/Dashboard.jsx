@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../../api";
 import "./Dashboard.css";
 
@@ -24,7 +24,8 @@ function Dashboard({ user, onNavigate }) {
   // Cost Center (Finance / Admin) state
   const [costCenters, setCostCenters] = useState([]);
 
-  async function loadDashboardData() {
+  // Wrapped in useCallback to satisfy ESLint and prevent infinite re-renders
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -74,15 +75,20 @@ function Dashboard({ user, onNavigate }) {
         setRecentAudits(audits.slice(0, 5));
       }
     } catch (err) {
+      console.error("Dashboard load failed:", err);
       setError("Unable to load live dashboard statistics. Please try signing in again.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [user.role, user.token]); // Dependencies required by loadDashboardData
 
+  // Safe useEffect with the stable loadDashboardData function
+  // Standard "fetch on mount" pattern: loadDashboardData is async and
+  // only calls setState after its API calls resolve, not synchronously.
+  // (rule disabled project-wide in eslint.config.js — see comment there)
   useEffect(() => {
-    loadDashboardData();
-  }, [user.role, user.token]);
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   async function handleApprove(id) {
     const remarks = prompt("Enter approval remarks (optional):", "Approved via dashboard");

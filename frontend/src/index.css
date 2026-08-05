@@ -100,3 +100,23 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Global Reset and Zoho-inspired Enterprise Theme */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff; /* Pure white background */
+  color: #1f2937; /* Dark slate for high contrast, readable text */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility class for clean, white Zoho-style cards */
+.zoho-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f3f4f6;
+  padding: 24px;
+}

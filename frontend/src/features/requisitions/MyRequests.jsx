@@ -45,8 +45,10 @@ function MyRequests({ user }) {
         .filter((h) => h.requisition?.requisitionId === r.requisitionId)
         .sort((a, b) => new Date(a.actionDate) - new Date(b.actionDate))
         .map((h) => ({
-          step: `${h.step} by ${h.actionBy?.fullName || h.actionBy?.username || "System"}${h.remarks ? ` — ${h.remarks}` : ""}`,
-          date: new Date(h.actionDate).toLocaleDateString(),
+          step: h.step,
+          actionedBy: h.actionBy?.fullName || h.actionBy?.username || 'System',
+          remarks: h.remarks,
+          date: h.actionDate ? new Date(h.actionDate).toLocaleDateString() : null,
         }));
 
       setSelectedRequest({

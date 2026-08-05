@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./ApprovalDashboard.css";
 
 function ApprovalDashboard({ user }) {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -92,7 +94,14 @@ function ApprovalDashboard({ user }) {
               ) : (
                 requests.map((r) => (
                   <tr key={r.requisitionId}>
-                    <td>{r.requisitionNumber}</td>
+                    <td>
+                      <button
+                        className="approval-view-link"
+                        onClick={() => navigate(`/requisitions/${r.requisitionId}`)}
+                      >
+                        {r.requisitionNumber}
+                      </button>
+                    </td>
                     <td>{r.title}</td>
                     <td>{r.department?.departmentName || "—"}</td>
                     <td>{r.neededBy}</td>

@@ -101,3 +101,17 @@
 .no-action {
   color: #9ca3af;
 }
+.approval-view-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+}
+
+.approval-view-link:hover {
+  color: #1d4ed8;
+}

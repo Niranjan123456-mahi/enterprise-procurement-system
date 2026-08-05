@@ -1,133 +1,112 @@
-import { useState } from "react";
-import { apiFetch } from "../../api";
-import "./Login.css";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { login } from '../../api/authApi';
+import { normalizeRoles, getPrimaryRole, getDefaultRouteForRole } from '../../utils/roles';
 
-const ROLES = [
-  { key: "Requester", label: "Requester" },
-  { key: "Approver", label: "Approver" },
-  { key: "Finance", label: "Finance" },
-  { key: "Goods Receiver", label: "Goods Receiver" },
-  { key: "Procurement Admin", label: "Procurement Admin" },
-];
+export default function Login({ onLogin }) {
+  const navigate = useNavigate();
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-function Login({ onLogin }) {
-  const [selectedRole, setSelectedRole] = useState(null);
+  const handleChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  async function handleLogin(e) {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
+    setLoading(true);
 
     try {
-      const login = await apiFetch("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
+      const response = await login(credentials);
 
-      const backendRoles = login.roles || [];
-      let isAuthorized = false;
-      if (selectedRole === "Requester" && backendRoles.includes("Requester")) isAuthorized = true;
-      if (selectedRole === "Approver" && (backendRoles.includes("Manager") || backendRoles.includes("Finance"))) isAuthorized = true;
-      if (selectedRole === "Finance" && backendRoles.includes("Finance")) isAuthorized = true;
-      if (selectedRole === "Goods Receiver" && backendRoles.includes("Receiver")) isAuthorized = true;
-      if (selectedRole === "Procurement Admin" && backendRoles.includes("Admin")) isAuthorized = true;
+      // Backend's LoginResponse field is "accessToken", not "token"
+      const token = response.accessToken;
 
-      if (!isAuthorized) {
-        setError(`You do not have permissions for the selected role: ${selectedRole}`);
-        return;
-      }
+      // Normalize whatever role names the backend sends into one
+      // consistent set used everywhere in the app (see utils/roles.js)
+      const roles = normalizeRoles(response.roles);
+      const primaryRole = getPrimaryRole(roles);
 
-      onLogin({
-        username: login.username,
-        role: selectedRole,
-        token: login.accessToken,
-        roles: login.roles,
-      });
+      // No role picker — this account's real backend roles decide
+      // everything automatically, exactly as requested.
+      const user = {
+        username: response.username || credentials.username,
+        token,
+        role: primaryRole,
+        roles,
+      };
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      if (onLogin) onLogin(user);
+
+      navigate(getDefaultRouteForRole(primaryRole));
     } catch (err) {
-      setError(err.message || "Wrong username or password, or the backend is unavailable.");
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'Invalid username or password.');
+    } finally {
+      setLoading(false);
     }
-  }
-
-  function goBackToRoleSelect() {
-    setSelectedRole(null);
-    setUsername("");
-    setPassword("");
-    setError("");
-  }
+  };
 
   return (
-    <div className="login-page">
-      <div className="login-box">
-        <div className="login-brand">
-          <div className="login-logo"></div>
-          <span>Procurement System</span>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
+      <div className="zoho-card" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', margin: '0 0 8px 0' }}>Enterprise Portal</h2>
+          <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Sign in with your corporate credentials</p>
         </div>
 
-        {selectedRole === null ? (
-          <div className="login-card">
-            <h2>Welcome</h2>
-            <p className="login-subtext">Choose how you want to sign in</p>
-
-            <label>Select role</label>
-            <select
-              className="role-dropdown"
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value !== "") {
-                  setSelectedRole(e.target.value);
-                }
-              }}
-            >
-              <option value="" disabled>
-                Select role
-              </option>
-              {ROLES.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div className="login-card">
-            <h2>Sign in as {selectedRole}</h2>
-            <p className="login-subtext">Enter your credentials to continue</p>
-
-            <form onSubmit={handleLogin}>
-              <label>Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-
-              {error && <p className="login-error">{error}</p>}
-
-              <button type="submit">Sign in</button>
-            </form>
-
-            <p className="login-signup-text">
-              <span className="login-signup-link" onClick={goBackToRoleSelect}>
-                ← Choose a different role
-              </span>
-            </p>
+        {error && (
+          <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '6px', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
+            {error}
           </div>
         )}
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>Username</label>
+            <input
+              type="text"
+              name="username"
+              value={credentials.username}
+              onChange={handleChange}
+              required
+              placeholder="your.name@company.com"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>Password</label>
+            <input
+              type="password"
+              name="password"
+              value={credentials.password}
+              onChange={handleChange}
+              required
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%', padding: '12px', borderRadius: '6px', border: 'none',
+              backgroundColor: loading ? '#9ca3af' : '#2563eb', color: '#ffffff',
+              fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '8px', transition: 'background-color 0.2s'
+            }}
+          >
+            {loading ? 'Authenticating...' : 'Sign In'}
+          </button>
+        </form>
       </div>
     </div>
   );
 }
-
-export default Login;

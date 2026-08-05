@@ -1,0 +1,108 @@
+.timeline {
+  padding: 4px 0;
+}
+
+.timeline-step {
+  display: flex;
+}
+
+.timeline-marker-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.timeline-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #d1d5db;
+  color: #ffffff;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.timeline-line {
+  width: 2px;
+  flex-grow: 1;
+  min-height: 24px;
+  background-color: #e5e7eb;
+  margin: 4px 0;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-bottom: 24px;
+}
+
+.timeline-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.timeline-content-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.timeline-description {
+  margin: 4px 0 8px 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.timeline-actor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+/* Completed steps: filled green */
+.timeline-step-completed .timeline-dot {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+.timeline-step-completed .timeline-line {
+  background-color: #10b981;
+}
+
+/* Rejected: filled red, ends the flow */
+.timeline-step-rejected .timeline-dot {
+  background-color: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Active: the current in-progress step, amber pulse */
+.timeline-step-active .timeline-dot {
+  border-color: #f59e0b;
+  background-color: #fef3c7;
+}
+.timeline-step-active .timeline-content-header h4 {
+  color: #92400e;
+}
+
+/* Upcoming: greyed out, not yet reached */
+.timeline-step-upcoming {
+  opacity: 0.55;
+}
+.timeline-step-upcoming .timeline-content-header h4 {
+  color: #9ca3af;
+}

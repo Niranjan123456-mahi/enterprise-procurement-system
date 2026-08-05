@@ -58,6 +58,7 @@ function FinanceDashboard({ user }) {
         });
 
       } catch (err) {
+        console.error("Finance dashboard load failed:", err);
         setError("Failed to compile financial metrics. Please confirm backend status.");
       } finally {
         setLoading(false);
