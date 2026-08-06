@@ -29,14 +29,12 @@ public class POReceiptController {
 
     @GetMapping
     @Operation(summary = "Get all PO receipts", description = "Retrieve a list of all purchase order receipts")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<List<POReceipt>> getAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get PO receipt by ID", description = "Retrieve details of a specific receipt by ID")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
     public ResponseEntity<POReceipt> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.findById(id));
     }

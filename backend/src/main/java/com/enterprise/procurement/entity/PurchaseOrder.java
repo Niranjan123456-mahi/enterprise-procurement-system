@@ -36,6 +36,15 @@ public class PurchaseOrder {
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
+    @Column(name = "total_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal totalAmount;
+
+    @Column(name = "tax_amount", precision = 12, scale = 2)
+    private java.math.BigDecimal taxAmount;
+
+    @Column(name = "delivery_date")
+    private LocalDate deliveryDate;
+
     @Column(name = "created_date")
     private LocalDate createdDate;
 

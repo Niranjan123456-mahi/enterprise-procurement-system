@@ -1,133 +1,76 @@
-.pod-page {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 0 16px;
+/* Printable Purchase Order stylesheet */
+
+.pod-page-container {
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.pod-back-btn {
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 16px;
+.pod-invoice-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-card);
+  padding: 40px;
+  box-shadow: var(--shadow-soft);
 }
 
-.pod-header {
+.pod-invoice-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
 }
 
-.pod-header h1 {
-  font-size: 24px;
-  margin: 0 0 4px 0;
-}
-
-.pod-subtext {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.pod-total {
-  text-align: right;
-}
-
-.pod-total span {
-  display: block;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.pod-total strong {
-  font-size: 22px;
-}
-
-.pod-card {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.pod-card h2 {
-  font-size: 16px;
-  margin-bottom: 14px;
-}
-
-.pod-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.pod-table th {
-  text-align: left;
-  padding: 10px;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
-}
-
-.pod-table td {
-  padding: 10px;
-  border-bottom: 1px solid #f0f1f3;
-}
-
-.pod-receive-box {
+.pod-company-details {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
 }
 
-.pod-receive-box input {
-  width: 90px;
-  padding: 6px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.pod-receive-box button {
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pod-complete {
-  color: #16a34a;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.pod-empty {
-  color: #9ca3af;
-  font-size: 14px;
-}
-
-.pod-history {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.pod-history li {
+.pod-invoice-meta {
   display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f1f3;
-  font-size: 14px;
+  flex-direction: column;
 }
 
-.pod-history li:last-child {
-  border-bottom: none;
+.pod-invoice-table-section th {
+  padding: 12px;
+  background-color: var(--bg-color);
+  border-bottom: 2px solid var(--border-color);
+  color: #4b5563;
 }
 
-.pod-history-date {
-  color: #9ca3af;
+.pod-invoice-table-section td {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: var(--color-black);
+}
+
+/* Printing styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .printable-area {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  
+  .enterprise-sidebar,
+  .enterprise-topnav-header {
+    display: none !important;
+  }
+  
+  .enterprise-main-wrapper {
+    margin-left: 0 !important;
+  }
+  
+  .enterprise-workspace-canvas {
+    padding: 0 !important;
+  }
 }

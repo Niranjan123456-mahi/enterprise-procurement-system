@@ -16,11 +16,8 @@ export const getRequisitionById = async (id) => {
  * all history and filter client-side by requisition.requisitionId.
  */
 export const getRequisitionHistory = async (id) => {
-  const response = await apiClient.get('/requisition-history');
-  const all = response.data || [];
-  return all
-    .filter((h) => h.requisition?.requisitionId === Number(id))
-    .sort((a, b) => new Date(a.actionDate) - new Date(b.actionDate));
+  const response = await apiClient.get(`/requisitions/${id}/timeline`);
+  return response.data;
 };
 
 /**

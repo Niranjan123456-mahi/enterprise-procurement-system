@@ -17,23 +17,38 @@ import java.util.stream.Collectors;
 public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
 
     private final RequisitionRepository requisitionRepository;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
-    public PurchaseOrderService(PurchaseOrderRepository repository, RequisitionRepository requisitionRepository) {
+    public PurchaseOrderService(PurchaseOrderRepository repository, RequisitionRepository requisitionRepository,
+                                AuditLogService auditLogService, NotificationService notificationService) {
         super(repository);
         this.requisitionRepository = requisitionRepository;
+        this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
     public PurchaseOrder createFromRequisition(Requisition requisition) {
+        if (requisition.getSupplier() == null) {
+            throw new IllegalArgumentException("Cannot generate Purchase Order: Requisition is missing a supplier.");
+        }
+
         String poNumber = "PO-" + requisition.getRequisitionNumber().replace("REQ-", "");
+        
+        java.math.BigDecimal reqAmt = requisition.getTotalAmount() != null ? requisition.getTotalAmount() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal taxAmt = reqAmt.multiply(java.math.BigDecimal.valueOf(0.10)); // 10% standard tax
         
         PurchaseOrder po = PurchaseOrder.builder()
                 .poNumber(poNumber)
                 .requisition(requisition)
                 .supplier(requisition.getSupplier())
+                .totalAmount(reqAmt.add(taxAmt))
+                .taxAmount(taxAmt)
+                .deliveryDate(LocalDate.now().plusDays(14)) // default ETA 14 days
                 .createdDate(LocalDate.now())
                 .stage("CREATED")
-                .status("CREATED")
+                .status("PENDING") // Using PENDING for supplier acceptance
                 .build();
 
         if (requisition.getLineItems() != null && !requisition.getLineItems().isEmpty()) {
@@ -53,6 +68,26 @@ public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
 
         requisition.setStatus(RequisitionStatus.ORDER_CREATED);
         requisitionRepository.save(requisition);
+
+        // Insert Audit Log
+        com.enterprise.procurement.entity.AuditLog audit = com.enterprise.procurement.entity.AuditLog.builder()
+                .user(requisition.getCreatedBy())
+                .module("PurchaseOrder")
+                .action("CREATE")
+                .entityName("PurchaseOrder")
+                .entityId(savedPo.getPoId())
+                .remarks("Automatically generated PO " + savedPo.getPoNumber() + " from Requisition " + requisition.getRequisitionNumber())
+                .build();
+        auditLogService.save(audit);
+
+        // Insert Notification for Requester
+        notificationService.createNotification(
+                requisition.getCreatedBy().getUsername(),
+                "Purchase Order Generated",
+                "Purchase Order " + savedPo.getPoNumber() + " has been generated for your requisition.",
+                "PurchaseOrder",
+                savedPo.getPoId()
+        );
 
         return savedPo;
     }

@@ -1,17 +1,38 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../api";
+import { 
+  Plus, 
+  FileText, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle, 
+  Building, 
+  Wallet, 
+  TrendingUp, 
+  TrendingDown,
+  ArrowRight,
+  Database
+} from "lucide-react";
 import "./Dashboard.css";
 
-function Dashboard({ user, onNavigate }) {
+export default function Dashboard({ user }) {
+  const navigate = useNavigate();
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [actionModal, setActionModal] = useState({ isOpen: false, requisitionId: null, actionType: null });
+  const [modalRemarks, setModalRemarks] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [submittingModal, setSubmittingModal] = useState(false);
   
   // Requester state
   const [myRequisitions, setMyRequisitions] = useState([]);
   
   // Manager / Finance state
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [actioningId, setActioningId] = useState(null);
   
   // Admin state
   const [allRequisitions, setAllRequisitions] = useState([]);
@@ -24,7 +45,6 @@ function Dashboard({ user, onNavigate }) {
   // Cost Center (Finance / Admin) state
   const [costCenters, setCostCenters] = useState([]);
 
-  // Wrapped in useCallback to satisfy ESLint and prevent infinite re-renders
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -45,7 +65,7 @@ function Dashboard({ user, onNavigate }) {
         ]);
         setPendingApprovals(pending);
         
-        const approved = reqs.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED");
+        const approved = reqs.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED" || r.status === "RECEIVED");
         const ALLOCATION_PER_CC = 500000;
         const mappedCCs = ccs.map(cc => {
           const spent = approved
@@ -80,64 +100,52 @@ function Dashboard({ user, onNavigate }) {
     } finally {
       setLoading(false);
     }
-  }, [user.role, user.token]); // Dependencies required by loadDashboardData
+  }, [user.role, user.token]);
 
-  // Safe useEffect with the stable loadDashboardData function
-  // Standard "fetch on mount" pattern: loadDashboardData is async and
-  // only calls setState after its API calls resolve, not synchronously.
-  // (rule disabled project-wide in eslint.config.js — see comment there)
   useEffect(() => {
     void loadDashboardData();
   }, [loadDashboardData]);
 
-  async function handleApprove(id) {
-    const remarks = prompt("Enter approval remarks (optional):", "Approved via dashboard");
-    if (remarks === null) return;
-    setActioningId(id);
-    try {
-      await apiFetch(`/api/requisitions/${id}/approve`, {
-        method: "POST",
-        body: JSON.stringify({ remarks })
-      }, user.token);
-      alert("Requisition approved successfully!");
-      loadDashboardData();
-    } catch (err) {
-      alert("Approval action failed: " + err.message);
-    } finally {
-      setActioningId(null);
-    }
+  function openActionModal(reqId, type) {
+    setActionModal({ isOpen: true, requisitionId: reqId, actionType: type });
+    setModalRemarks(type === 'APPROVE' ? 'Approved via dashboard' : '');
+    setModalError('');
   }
 
-  async function handleReject(id) {
-    const remarks = prompt("Enter rejection remarks (required):");
-    if (!remarks) {
-      alert("Rejection remarks are required.");
+  async function handleModalConfirm() {
+    if (actionModal.actionType === 'REJECT' && !modalRemarks.trim()) {
+      setModalError('Remarks are required for rejection.');
       return;
     }
-    setActioningId(id);
+    setSubmittingModal(true);
+    setModalError('');
     try {
-      await apiFetch(`/api/requisitions/${id}/reject`, {
+      await apiFetch(`/api/requisitions/${actionModal.requisitionId}/actions`, {
         method: "POST",
-        body: JSON.stringify({ remarks })
+        body: JSON.stringify({ action: actionModal.actionType, remarks: modalRemarks })
       }, user.token);
-      alert("Requisition rejected successfully!");
+      setActionModal({ isOpen: false, requisitionId: null, actionType: null });
       loadDashboardData();
     } catch (err) {
-      alert("Rejection action failed: " + err.message);
+      setModalError(err.message || 'Action failed.');
     } finally {
-      setActioningId(null);
+      setSubmittingModal(false);
     }
   }
 
   if (loading) {
-    return <div className="dash-loading">Loading live procurement workspace...</div>;
+    return (
+      <div style={{ textAlign: "center", padding: "40px" }}>
+        <p>Loading live procurement workspace...</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="dash-error-container">
-        <p className="dash-error">{error}</p>
-        <button onClick={loadDashboardData} className="dash-retry-btn">Retry</button>
+      <div style={{ textAlign: "center", padding: "40px" }}>
+        <p style={{ color: "var(--color-rejected)", fontWeight: 600, marginBottom: "16px" }}>{error}</p>
+        <button onClick={loadDashboardData} className="btn-enterprise primary">Retry</button>
       </div>
     );
   }
@@ -149,37 +157,54 @@ function Dashboard({ user, onNavigate }) {
   if (user.role === "Requester") {
     const drafts = myRequisitions.filter(r => r.status === "DRAFT").length;
     const pending = myRequisitions.filter(r => r.status === "PENDING_APPROVAL").length;
-    const approved = myRequisitions.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED").length;
+    const approved = myRequisitions.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED" || r.status === "RECEIVED").length;
     const rejected = myRequisitions.filter(r => r.status === "REJECTED").length;
 
     return (
       <div className="dash-container">
         <div className="dash-header">
           <div>
-            <h1>Welcome Back, {user.username}</h1>
+            <h1>Welcome back, {user.fullName || user.username}</h1>
             <p>Requester Workspace · View your requisitions status and raise new requests</p>
           </div>
-          <button className="dash-primary-btn" onClick={() => onNavigate("requisition")}>
-            + New Requisition
+          <button className="btn-enterprise primary" onClick={() => navigate("/requisitions/new")}>
+            <Plus size={16} />
+            <span>New Requisition</span>
           </button>
         </div>
 
         <div className="dash-stats-grid">
           <div className="dash-stat-card border-draft">
-            <span>Draft Requests</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Draft Requests</span>
+              <FileText size={20} style={{ color: 'var(--color-info)' }} />
+            </div>
             <strong>{drafts}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>Stored in drafts list</span>
           </div>
           <div className="dash-stat-card border-pending">
-            <span>Pending Approval</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Pending Approval</span>
+              <Clock size={20} style={{ color: 'var(--color-pending)' }} />
+            </div>
             <strong>{pending}</strong>
+            <span className="trend-text">Updates live</span>
           </div>
           <div className="dash-stat-card border-approved">
-            <span>Approved Requests</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Approved Requests</span>
+              <CheckCircle2 size={20} style={{ color: 'var(--color-approved)' }} />
+            </div>
             <strong>{approved}</strong>
+            <span className="trend-text">Historically completed</span>
           </div>
           <div className="dash-stat-card border-rejected">
-            <span>Rejected Requests</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Rejected Requests</span>
+              <XCircle size={20} style={{ color: 'var(--color-rejected)' }} />
+            </div>
             <strong>{rejected}</strong>
+            <span className="trend-text">Denied requisitions</span>
           </div>
         </div>
 
@@ -192,8 +217,8 @@ function Dashboard({ user, onNavigate }) {
                 <th>Title</th>
                 <th>Category</th>
                 <th>Supplier</th>
-                <th>Amount</th>
-                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
+                <th style={{ paddingLeft: '24px' }}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -203,9 +228,9 @@ function Dashboard({ user, onNavigate }) {
                   <td>{r.title}</td>
                   <td>{r.category?.categoryName || "N/A"}</td>
                   <td>{r.supplier?.supplierName || "Direct"}</td>
-                  <td>₹ {(r.totalAmount || 0).toLocaleString()}</td>
-                  <td>
-                    <span className={`status-badge badge-${r.status?.toLowerCase()}`}>
+                  <td style={{ textAlign: 'right' }}>₹ {(r.totalAmount || 0).toLocaleString()}</td>
+                  <td style={{ paddingLeft: '24px' }}>
+                    <span className={`status-pill ${r.status?.toLowerCase() === 'draft' ? 'pending' : r.status?.toLowerCase() === 'pending_approval' ? 'pending' : r.status?.toLowerCase() === 'approved' ? 'approved' : r.status?.toLowerCase() === 'rejected' ? 'rejected' : 'po-generated'}`}>
                       {r.status}
                     </span>
                   </td>
@@ -213,7 +238,9 @@ function Dashboard({ user, onNavigate }) {
               ))}
               {myRequisitions.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center", color: "#666" }}>No requisitions submitted yet.</td>
+                  <td colSpan="6" style={{ textAlign: "center", color: "#6b7280", padding: "1.5rem" }}>
+                    No purchase requests submitted yet. Create your first requisition.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -228,20 +255,28 @@ function Dashboard({ user, onNavigate }) {
       <div className="dash-container">
         <div className="dash-header">
           <div>
-            <h1>Manager Inbox</h1>
-            <p>Approvals Workspace · Review and act on purchase requests assigned to your sequence step</p>
+            <h1>Approver Authorization Inbox</h1>
+            <p>Approvals Workspace · Review and sign off on purchase requests assigned to your step</p>
           </div>
+          <button className="btn-enterprise primary" onClick={() => navigate("/approvals")}>
+            <span>Go to Approvals Dashboard</span>
+            <ArrowRight size={16} />
+          </button>
         </div>
 
-        <div className="dash-stats-grid">
+        <div className="dash-stats-grid" style={{ gridTemplateColumns: '320px 1fr' }}>
           <div className="dash-stat-card border-pending">
-            <span>Awaiting Your Approval</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Awaiting Your Approval</span>
+              <AlertCircle size={20} style={{ color: 'var(--color-pending)' }} />
+            </div>
             <strong>{pendingApprovals.length}</strong>
+            <span className="trend-text trend-up"><TrendingUp size={14} /> Action required</span>
           </div>
         </div>
 
         <div className="dash-table-card">
-          <h2>Pending Requisitions</h2>
+          <h2>Pending Approvals Queue</h2>
           <table className="dash-table">
             <thead>
               <tr>
@@ -249,9 +284,8 @@ function Dashboard({ user, onNavigate }) {
                 <th>Requester</th>
                 <th>Category</th>
                 <th>Department</th>
-                <th>Amount</th>
-                <th>Justification</th>
-                <th style={{ textAlign: "center" }}>Actions</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -261,21 +295,22 @@ function Dashboard({ user, onNavigate }) {
                   <td>{r.createdBy?.username}</td>
                   <td>{r.category?.categoryName}</td>
                   <td>{r.department?.departmentName}</td>
-                  <td>₹ {(r.totalAmount || 0).toLocaleString()}</td>
-                  <td>{r.justification}</td>
+                  <td style={{ textAlign: 'right' }}>₹ {(r.totalAmount || 0).toLocaleString()}</td>
                   <td style={{ textAlign: "center" }}>
                     <div className="dash-action-buttons">
                       <button 
                         className="btn-approve" 
-                        onClick={() => handleApprove(r.requisitionId)}
-                        disabled={actioningId === r.requisitionId}
+                        onClick={() => openActionModal(r.requisitionId, 'APPROVE')}
+                        disabled={submittingModal}
+                        style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', cursor: 'pointer', marginRight: '6px' }}
                       >
                         Approve
                       </button>
                       <button 
                         className="btn-reject" 
-                        onClick={() => handleReject(r.requisitionId)}
-                        disabled={actioningId === r.requisitionId}
+                        onClick={() => openActionModal(r.requisitionId, 'REJECT')}
+                        disabled={submittingModal}
+                        style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                       >
                         Reject
                       </button>
@@ -285,12 +320,61 @@ function Dashboard({ user, onNavigate }) {
               ))}
               {pendingApprovals.length === 0 && (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: "center", color: "#666" }}>All caught up! No requisitions pending your approval.</td>
+                  <td colSpan="6" style={{ textAlign: "center", color: "#6b7280", padding: "1.5rem" }}>
+                    All caught up! No requisitions pending your approval.
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Modal Overlay */}
+        {actionModal.isOpen && (
+          <div className="modal-blur-overlay">
+            <div className="zoho-card modal-panel-card" style={{ maxWidth: '420px', border: 'none' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>
+                Requisition {actionModal.actionType === 'APPROVE' ? 'Approval' : 'Rejection'}
+              </h3>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--color-black)', marginBottom: '6px' }}>
+                  Remarks / Audit Comments {actionModal.actionType === 'REJECT' && <span style={{ color: 'var(--color-rejected)' }}>*</span>}
+                </label>
+                <textarea
+                  rows="3"
+                  value={modalRemarks}
+                  onChange={(e) => setModalRemarks(e.target.value)}
+                  placeholder="Enter remarks..."
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)',
+                    fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none'
+                  }}
+                />
+              </div>
+
+              {modalError && (
+                <p style={{ color: 'var(--color-rejected)', fontSize: '13px', marginBottom: '16px', fontWeight: '500' }}>⚠️ {modalError}</p>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  className="btn-enterprise secondary"
+                  style={{ flex: 1, height: '40px' }}
+                  onClick={() => setActionModal({ isOpen: false, requisitionId: null, actionType: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-enterprise primary"
+                  style={{ flex: 1, height: '40px', backgroundColor: actionModal.actionType === 'APPROVE' ? 'var(--color-approved)' : 'var(--color-rejected)' }}
+                  onClick={handleModalConfirm}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -311,25 +395,40 @@ function Dashboard({ user, onNavigate }) {
 
         <div className="dash-stats-grid">
           <div className="dash-stat-card border-approved">
-            <span>Total Allocated Budget</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Total Allocated Budget</span>
+              <Building size={20} style={{ color: 'var(--color-approved)' }} />
+            </div>
             <strong>₹ {totalAllocated.toLocaleString()}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>All Department Caps</span>
           </div>
           <div className="dash-stat-card border-rejected">
-            <span>Total Spent</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Total Spent</span>
+              <Wallet size={20} style={{ color: 'var(--color-rejected)' }} />
+            </div>
             <strong>₹ {totalSpent.toLocaleString()}</strong>
+            <span className="trend-text trend-up"><TrendingUp size={14} /> Active distributions</span>
           </div>
           <div className="dash-stat-card border-draft">
-            <span>Total Remaining</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Total Remaining</span>
+              <Database size={20} style={{ color: 'var(--color-info)' }} />
+            </div>
             <strong>₹ {totalRemaining.toLocaleString()}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>Available reserves</span>
           </div>
           <div className="dash-stat-card border-pending">
-            <span>Awaiting Finance Approval</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Awaiting Finance Approval</span>
+              <AlertCircle size={20} style={{ color: 'var(--color-pending)' }} />
+            </div>
             <strong>{pendingApprovals.length}</strong>
+            <span className="trend-text trend-up"><TrendingUp size={14} /> Action pending</span>
           </div>
         </div>
 
-        {/* Pending approvals */}
-        <div className="dash-table-card" style={{ marginBottom: "2rem" }}>
+        <div className="dash-table-card">
           <h2>Finance Pending Approvals</h2>
           <table className="dash-table">
             <thead>
@@ -338,8 +437,8 @@ function Dashboard({ user, onNavigate }) {
                 <th>Requester</th>
                 <th>Category</th>
                 <th>Department</th>
-                <th>Amount</th>
-                <th style={{ textAlign: "center" }}>Actions</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -349,20 +448,22 @@ function Dashboard({ user, onNavigate }) {
                   <td>{r.createdBy?.username}</td>
                   <td>{r.category?.categoryName}</td>
                   <td>{r.department?.departmentName}</td>
-                  <td>₹ {(r.totalAmount || 0).toLocaleString()}</td>
+                  <td style={{ textAlign: 'right' }}>₹ {(r.totalAmount || 0).toLocaleString()}</td>
                   <td style={{ textAlign: "center" }}>
                     <div className="dash-action-buttons">
                       <button 
                         className="btn-approve" 
-                        onClick={() => handleApprove(r.requisitionId)}
-                        disabled={actioningId === r.requisitionId}
+                        onClick={() => openActionModal(r.requisitionId, 'APPROVE')}
+                        disabled={submittingModal}
+                        style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', cursor: 'pointer', marginRight: '6px' }}
                       >
                         Approve
                       </button>
                       <button 
                         className="btn-reject" 
-                        onClick={() => handleReject(r.requisitionId)}
-                        disabled={actioningId === r.requisitionId}
+                        onClick={() => openActionModal(r.requisitionId, 'REJECT')}
+                        disabled={submittingModal}
+                        style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                       >
                         Reject
                       </button>
@@ -372,7 +473,9 @@ function Dashboard({ user, onNavigate }) {
               ))}
               {pendingApprovals.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center", color: "#666" }}>No pending finance approvals.</td>
+                  <td colSpan="6" style={{ textAlign: "center", color: "#6b7280", padding: "1.5rem" }}>
+                    No pending finance approvals.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -396,7 +499,7 @@ function Dashboard({ user, onNavigate }) {
                       className="cc-progress-bar-fill" 
                       style={{ 
                         width: `${Math.min(100, percent)}%`,
-                        backgroundColor: percent > 90 ? "#ea4335" : "#34a853"
+                        backgroundColor: percent > 90 ? "var(--color-rejected)" : "var(--color-approved)"
                       }}
                     ></div>
                   </div>
@@ -405,6 +508,53 @@ function Dashboard({ user, onNavigate }) {
             })}
           </div>
         </div>
+
+        {/* Action Confirmation Modal */}
+        {actionModal.isOpen && (
+          <div className="modal-blur-overlay">
+            <div className="zoho-card modal-panel-card" style={{ maxWidth: '420px', border: 'none' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>
+                Requisition {actionModal.actionType === 'APPROVE' ? 'Approval' : 'Rejection'}
+              </h3>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--color-black)', marginBottom: '6px' }}>
+                  Remarks / Justification {actionModal.actionType === 'REJECT' && <span style={{ color: 'var(--color-rejected)' }}>*</span>}
+                </label>
+                <textarea
+                  rows="3"
+                  value={modalRemarks}
+                  onChange={(e) => setModalRemarks(e.target.value)}
+                  placeholder="Enter remarks..."
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)',
+                    fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none'
+                  }}
+                />
+              </div>
+
+              {modalError && (
+                <p style={{ color: 'var(--color-rejected)', fontSize: '13px', marginBottom: '16px', fontWeight: '500' }}>⚠️ {modalError}</p>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  className="btn-enterprise secondary"
+                  style={{ flex: 1, height: '40px' }}
+                  onClick={() => setActionModal({ isOpen: false, requisitionId: null, actionType: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-enterprise primary"
+                  style={{ flex: 1, height: '40px', backgroundColor: actionModal.actionType === 'APPROVE' ? 'var(--color-approved)' : 'var(--color-rejected)' }}
+                  onClick={handleModalConfirm}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -420,19 +570,28 @@ function Dashboard({ user, onNavigate }) {
             <h1>Warehouse Receiving Desk</h1>
             <p>Receiving Workspace · Log physical goods received against active Purchase Orders</p>
           </div>
-          <button className="dash-primary-btn" onClick={() => onNavigate("receiving")}>
-            Go to Goods Receipt
+          <button className="btn-enterprise primary" onClick={() => navigate("/receiving")}>
+            <span>Go to Goods Receipt</span>
+            <ArrowRight size={16} />
           </button>
         </div>
 
-        <div className="dash-stats-grid">
+        <div className="dash-stats-grid" style={{ gridTemplateColumns: '280px 280px 1fr' }}>
           <div className="dash-stat-card border-pending">
-            <span>Awaiting Receipts</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Awaiting Receipts</span>
+              <Clock size={20} style={{ color: 'var(--color-pending)' }} />
+            </div>
             <strong>{awaiting}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>Open Purchase Orders</span>
           </div>
           <div className="dash-stat-card border-approved">
-            <span>Completed Receipts</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Completed Receipts</span>
+              <CheckCircle2 size={20} style={{ color: 'var(--color-approved)' }} />
+            </div>
             <strong>{completed}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>Archived PO distributions</span>
           </div>
         </div>
 
@@ -456,7 +615,7 @@ function Dashboard({ user, onNavigate }) {
                   <td>{po.createdDate}</td>
                   <td>{po.stage}</td>
                   <td>
-                    <span className={`status-badge badge-${po.status?.toLowerCase()}`}>
+                    <span className={`status-pill ${po.status?.toLowerCase() === 'fully_delivered' ? 'approved' : po.status?.toLowerCase() === 'partially_delivered' ? 'pending' : 'po-generated'}`}>
                       {po.status}
                     </span>
                   </td>
@@ -464,7 +623,7 @@ function Dashboard({ user, onNavigate }) {
               ))}
               {receiverPOs.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", color: "#666" }}>No active POs in database.</td>
+                  <td colSpan="5" style={{ textAlign: "center", color: "#6b7280", padding: "1.5rem" }}>No active POs in database.</td>
                 </tr>
               )}
             </tbody>
@@ -476,7 +635,7 @@ function Dashboard({ user, onNavigate }) {
 
   if (user.role === "Procurement Admin") {
     const pendingReqs = allRequisitions.filter(r => r.status === "PENDING_APPROVAL").length;
-    const approvedReqs = allRequisitions.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED").length;
+    const approvedReqs = allRequisitions.filter(r => r.status === "APPROVED" || r.status === "ORDER_CREATED" || r.status === "RECEIVED").length;
     const rejectedReqs = allRequisitions.filter(r => r.status === "REJECTED").length;
     const totalPOs = allPOs.length;
 
@@ -491,26 +650,42 @@ function Dashboard({ user, onNavigate }) {
 
         <div className="dash-stats-grid">
           <div className="dash-stat-card border-pending">
-            <span>Pending Approvals</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Pending Approvals</span>
+              <Clock size={20} style={{ color: 'var(--color-pending)' }} />
+            </div>
             <strong>{pendingReqs}</strong>
+            <span className="trend-text trend-up"><TrendingUp size={14} /> Requires action</span>
           </div>
           <div className="dash-stat-card border-approved">
-            <span>Approved Requisitions</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Approved Requisitions</span>
+              <CheckCircle2 size={20} style={{ color: 'var(--color-approved)' }} />
+            </div>
             <strong>{approvedReqs}</strong>
+            <span className="trend-text trend-up"><TrendingUp size={14} /> +12% this month</span>
           </div>
           <div className="dash-stat-card border-rejected">
-            <span>Rejected Requisitions</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Rejected Requisitions</span>
+              <XCircle size={20} style={{ color: 'var(--color-rejected)' }} />
+            </div>
             <strong>{rejectedReqs}</strong>
+            <span className="trend-text trend-down"><TrendingDown size={14} /> -8% vs last month</span>
           </div>
           <div className="dash-stat-card border-draft">
-            <span>Active Purchase Orders</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Active Purchase Orders</span>
+              <Database size={20} style={{ color: 'var(--color-info)' }} />
+            </div>
             <strong>{totalPOs}</strong>
+            <span className="trend-text" style={{ color: '#6b7280' }}>Total vendor issues</span>
           </div>
         </div>
 
         <div className="dash-two-columns">
           {/* Recent activities */}
-          <div className="dash-table-card flex-1">
+          <div className="dash-table-card">
             <h2>Recent Audit Activities</h2>
             <div className="audit-list">
               {recentAudits.map(log => (
@@ -525,21 +700,21 @@ function Dashboard({ user, onNavigate }) {
                 </div>
               ))}
               {recentAudits.length === 0 && (
-                <p style={{ color: "#666", padding: "1rem 0" }}>No audit log activities recorded.</p>
+                <p style={{ color: "#6b7280", padding: "1rem 0" }}>No audit log activities recorded.</p>
               )}
             </div>
           </div>
 
           {/* Latest requests */}
-          <div className="dash-table-card flex-1">
+          <div className="dash-table-card">
             <h2>Latest Requisitions</h2>
-            <table className="dash-table mini-table">
+            <table className="dash-table">
               <thead>
                 <tr>
                   <th>PR Number</th>
                   <th>Requester</th>
-                  <th>Amount</th>
-                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th style={{ paddingLeft: '16px' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -547,9 +722,9 @@ function Dashboard({ user, onNavigate }) {
                   <tr key={r.requisitionId}>
                     <td><strong>{r.requisitionNumber}</strong></td>
                     <td>{r.createdBy?.username}</td>
-                    <td>₹ {(r.totalAmount || 0).toLocaleString()}</td>
-                    <td>
-                      <span className={`status-badge badge-${r.status?.toLowerCase()}`}>
+                    <td style={{ textAlign: 'right' }}>₹ {(r.totalAmount || 0).toLocaleString()}</td>
+                    <td style={{ paddingLeft: '16px' }}>
+                      <span className={`status-pill ${r.status?.toLowerCase() === 'draft' ? 'pending' : r.status?.toLowerCase() === 'pending_approval' ? 'pending' : r.status?.toLowerCase() === 'approved' ? 'approved' : r.status?.toLowerCase() === 'rejected' ? 'rejected' : 'po-generated'}`}>
                         {r.status}
                       </span>
                     </td>
@@ -565,5 +740,3 @@ function Dashboard({ user, onNavigate }) {
 
   return null;
 }
-
-export default Dashboard;

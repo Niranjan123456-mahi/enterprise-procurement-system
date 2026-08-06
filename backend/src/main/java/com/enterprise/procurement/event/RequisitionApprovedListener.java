@@ -4,8 +4,9 @@ import com.enterprise.procurement.entity.PurchaseOrder;
 import com.enterprise.procurement.service.PurchaseOrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class RequisitionApprovedListener {
@@ -17,7 +18,7 @@ public class RequisitionApprovedListener {
         this.purchaseOrderService = purchaseOrderService;
     }
 
-    @EventListener
+    @org.springframework.context.event.EventListener
     public void handleRequisitionApproved(RequisitionApprovedEvent event) {
         log.info("[EVENT_LISTENER] Requisition approved event received for requisition ID: {}. Generating Purchase Order...", 
                 event.getRequisition().getRequisitionId());

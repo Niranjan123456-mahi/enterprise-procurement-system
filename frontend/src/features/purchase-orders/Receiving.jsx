@@ -1,19 +1,23 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../api";
-import "./Receiving.css";
+import { Clock } from "lucide-react";
+import EnterpriseTable from "../../components/EnterpriseTable";
 import PODetail from "./PODetail";
+import "./Receiving.css";
 
-function Receiving({ user }) {
+export default function Receiving({ user }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState("");
 
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   useEffect(() => {
     async function loadOrders() {
       try {
         const data = await apiFetch("/api/purchase-orders", {}, user.token);
-        // only show orders that are NOT fully delivered
+        // show active orders awaiting deliveries
         const activeOrders = data.filter((o) => o.status !== "FULLY_DELIVERED");
         setOrders(activeOrders);
       } catch {
@@ -24,8 +28,6 @@ function Receiving({ user }) {
     }
     loadOrders();
   }, [user.token]);
-
-  const [selectedOrder, setSelectedOrder] = useState(null);
 
   async function loadOrderDetail(po) {
     setLoadingDetail(true);
@@ -70,12 +72,16 @@ function Receiving({ user }) {
     }
   }
 
-  async function handleRecordReceipt(poId, description, qty) {
+  async function handleRecordReceipt(poId, receiptData) {
     try {
       const payload = {
         purchaseOrder: { poId: poId },
-        description: description,
-        qtyReceived: parseInt(qty),
+        description: receiptData.description,
+        qtyReceived: parseInt(receiptData.qty),
+        damagedQty: parseInt(receiptData.damagedQty) || 0,
+        itemCondition: receiptData.condition,
+        warehouse: receiptData.warehouse,
+        remarks: receiptData.remarks,
         receivedDate: new Date().toISOString().slice(0, 10),
       };
 
@@ -112,53 +118,75 @@ function Receiving({ user }) {
     );
   }
 
-  return (
-    <div className="recv-page">
-      <h1>Receiving</h1>
-      <p className="recv-subtext">Log deliveries for open purchase orders</p>
-      {error && <p className="recv-error" style={{ color: "red" }}>{error}</p>}
-      {loadingDetail && <p style={{ color: "var(--primary-color)" }}>Loading details...</p>}
+  const tableHeaders = [
+    { label: "PO Number", field: "poNumber" },
+    { label: "Vendor Partner", field: "supplier.supplierName" },
+    { label: "Date Issued", field: "createdDate" },
+    { 
+      label: "Order Total", 
+      field: "requisition.totalAmount", 
+      align: "right",
+      render: (row, val) => `₹ ${(val || 0).toLocaleString()}`
+    },
+    { 
+      label: "Fulfillment Stage", 
+      field: "stage",
+      render: (row, val) => (
+        <span className={`status-pill ${String(val).toLowerCase() === 'fully_delivered' ? 'approved' : String(val).toLowerCase() === 'partially_delivered' ? 'pending' : 'po-generated'}`}>
+          {val}
+        </span>
+      )
+    }
+  ];
 
-      <div className="recv-table-card">
+  return (
+    <div className="recv-page" style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--font-body)' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 className="page-title">Warehouse Receiving Desk</h1>
+        <p className="page-subtext">Log shipment deliveries against active open purchase orders</p>
+      </div>
+
+      {error && (
+        <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {loadingDetail && (
+        <div style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px', fontWeight: '600' }}>
+          Compiling purchase order documents...
+        </div>
+      )}
+
+      {/* Metrics Row */}
+      <div className="dash-stats-grid" style={{ gridTemplateColumns: '300px 1fr', marginBottom: '28px' }}>
+        <div className="dash-stat-card border-pending">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Awaiting Receipts</span>
+            <Clock size={20} style={{ color: 'var(--color-pending)' }} />
+          </div>
+          <strong>{orders.length}</strong>
+          <span className="trend-text" style={{ color: '#6b7280' }}>Open Purchase Orders</span>
+        </div>
+      </div>
+
+      {/* Enterprise Table component */}
+      <div className="zoho-card" style={{ padding: '0', overflow: 'hidden', border: 'none' }}>
         {loading ? (
-          <p style={{ padding: "1.5rem" }}>Loading orders...</p>
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <p>Gathering active orders...</p>
+          </div>
         ) : (
-          <table className="recv-table">
-            <thead>
-              <tr>
-                <th>PO #</th>
-                <th>Vendor</th>
-                <th>Created</th>
-                <th>Total</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="recv-empty">No POs awaiting receipt.</td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr
-                    key={order.poId}
-                    className="recv-clickable-row"
-                    onClick={() => loadOrderDetail(order)}
-                  >
-                    <td>{order.poNumber}</td>
-                    <td>{order.supplier?.supplierName || "—"}</td>
-                    <td>{order.createdDate}</td>
-                    <td>₹ {(order.requisition?.totalAmount || 0).toLocaleString()}</td>
-                    <td>{order.stage}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <EnterpriseTable
+            headers={tableHeaders}
+            data={orders}
+            itemsPerPage={10}
+            onRowClick={(row) => loadOrderDetail(row)}
+            emptyMessage="No pending orders awaiting physical receipt."
+            exportFilename="receiving_queue.csv"
+          />
         )}
       </div>
     </div>
   );
 }
-
-export default Receiving;

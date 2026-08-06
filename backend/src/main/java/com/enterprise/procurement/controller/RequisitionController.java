@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
+import com.enterprise.procurement.dto.TimelineEvent;
+import com.enterprise.procurement.service.AuditLogService;
 
 @RestController
 @RequestMapping("/api/requisitions")
@@ -55,6 +57,25 @@ public class RequisitionController {
                                               Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.create(request, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<List<TimelineEvent>> getTimeline(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getRequisitionTimeline(id));
+    }
+
+    @GetMapping("/approvals/history")
+    @PreAuthorize("hasAnyRole('Admin', 'Manager', 'Finance')")
+    public ResponseEntity<List<Requisition>> getMyApprovalsHistory(Authentication authentication) {
+        return ResponseEntity.ok(service.findMyApprovals(authentication.getName()));
+    }
+
+    @GetMapping("/preview-approval")
+    public ResponseEntity<List<String>> previewApprovalChain(
+            @RequestParam Long categoryId,
+            @RequestParam java.math.BigDecimal amount,
+            Authentication authentication) {
+        return ResponseEntity.ok(service.getApprovalChainNames(categoryId, amount, authentication.getName()));
     }
 
     @PostMapping("/{id}/actions")

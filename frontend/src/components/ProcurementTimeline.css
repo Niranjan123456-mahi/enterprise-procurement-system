@@ -1,108 +1,138 @@
-.timeline {
-  padding: 4px 0;
-}
+/* Visual Workflow Timeline stylesheet */
 
-.timeline-step {
+.timeline-container {
   display: flex;
+  flex-direction: column;
+  padding: 10px 0;
 }
 
-.timeline-marker-col {
+.timeline-step-row {
+  display: flex;
+  gap: 16px;
+}
+
+.timeline-badge-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-right: 16px;
 }
 
-.timeline-dot {
-  width: 22px;
-  height: 22px;
+.timeline-avatar-circle {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background-color: var(--bg-color);
+  border: 2px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #d1d5db;
+  font-weight: 700;
+  font-size: 11px;
+  color: #4b5563;
+  box-shadow: var(--shadow-soft);
+  z-index: 2;
+  transition: all 0.25s ease;
+}
+
+.timeline-step-completed .timeline-avatar-circle {
+  background-color: var(--color-approved);
+  border-color: var(--color-approved);
   color: #ffffff;
-  background-color: #ffffff;
-  flex-shrink: 0;
 }
 
-.timeline-line {
+.timeline-step-rejected .timeline-avatar-circle {
+  background-color: var(--color-rejected);
+  border-color: var(--color-rejected);
+  color: #ffffff;
+}
+
+.timeline-step-active .timeline-avatar-circle {
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.badge-check-icon,
+.badge-reject-icon,
+.badge-active-icon {
+  color: #ffffff;
+}
+
+.badge-active-icon {
+  color: var(--primary-color);
+}
+
+.badge-initials {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Timeline Connectors */
+.timeline-connector-line {
   width: 2px;
-  flex-grow: 1;
-  min-height: 24px;
-  background-color: #e5e7eb;
-  margin: 4px 0;
+  height: 48px;
+  background-color: var(--border-color);
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
-.timeline-content {
-  flex: 1;
+.timeline-connector-line.completed {
+  background-color: var(--color-approved);
+}
+
+/* Details Column */
+.timeline-details-column {
   padding-bottom: 24px;
+  flex-grow: 1;
 }
 
-.timeline-content-header {
+.timeline-step-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
-.timeline-content-header h4 {
+.timeline-step-header h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-black);
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2937;
 }
 
-.timeline-date {
-  font-size: 12px;
+.step-date-stamp {
+  font-size: 11.5px;
   color: #9ca3af;
-  white-space: nowrap;
+  font-weight: 600;
 }
 
-.timeline-description {
-  margin: 4px 0 8px 0;
-  font-size: 13px;
-  color: #6b7280;
+.step-description-text {
+  font-size: 12.5px;
+  color: #4b5563;
   line-height: 1.5;
+  margin: 0 0 6px 0;
 }
 
-.timeline-actor {
-  display: inline-flex;
+.step-actor-info {
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #4b5563;
-}
-
-/* Completed steps: filled green */
-.timeline-step-completed .timeline-dot {
-  background-color: #10b981;
-  border-color: #10b981;
-}
-.timeline-step-completed .timeline-line {
-  background-color: #10b981;
-}
-
-/* Rejected: filled red, ends the flow */
-.timeline-step-rejected .timeline-dot {
-  background-color: #ef4444;
-  border-color: #ef4444;
-}
-
-/* Active: the current in-progress step, amber pulse */
-.timeline-step-active .timeline-dot {
-  border-color: #f59e0b;
-  background-color: #fef3c7;
-}
-.timeline-step-active .timeline-content-header h4 {
-  color: #92400e;
-}
-
-/* Upcoming: greyed out, not yet reached */
-.timeline-step-upcoming {
-  opacity: 0.55;
-}
-.timeline-step-upcoming .timeline-content-header h4 {
+  font-size: 11px;
   color: #9ca3af;
+  font-weight: 600;
+}
+
+.actor-icon {
+  color: #9ca3af;
+}
+
+/* pulse animation */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
 }

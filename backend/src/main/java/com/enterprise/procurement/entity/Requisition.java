@@ -60,6 +60,9 @@ public class Requisition {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "priority")
+    private String priority;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

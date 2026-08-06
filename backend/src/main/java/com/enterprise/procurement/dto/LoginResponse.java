@@ -30,6 +30,11 @@ public class LoginResponse {
     @Schema(description = "List of role names assigned to the user", example = "[\"REQUESTER\", \"PROCUREMENT_ADMIN\"]")
     private List<String> roles;
 
+    private Long userId;
+    private String fullName;
+    private Long departmentId;
+    private String departmentName;
+
     public LoginResponse(String accessToken, String tokenType, String username) {
         this.accessToken = accessToken;
         this.tokenType = tokenType;

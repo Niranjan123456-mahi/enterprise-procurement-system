@@ -20,15 +20,18 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final NotificationService notificationService;
 
     public POReceiptService(POReceiptRepository repository,
                             PurchaseOrderRepository purchaseOrderRepository,
                             UserRepository userRepository,
-                            AuditLogRepository auditLogRepository) {
+                            AuditLogRepository auditLogRepository,
+                            NotificationService notificationService) {
         super(repository);
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.userRepository = userRepository;
         this.auditLogRepository = auditLogRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -36,6 +39,11 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
         receipt.setReceivedBy(user);
+        
+        if (receipt.getStatus() == null) {
+            receipt.setStatus("PENDING_VERIFICATION");
+        }
+
         POReceipt saved = save(receipt);
 
         AuditLog audit = AuditLog.builder()
@@ -44,9 +52,17 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
                 .action("RECEIVE")
                 .entityName("Purchase Order")
                 .entityId(saved.getPurchaseOrder().getPoId())
-                .remarks("Received " + saved.getQtyReceived() + " units of " + saved.getDescription())
+                .remarks("Received " + saved.getQtyReceived() + " units. Status: " + saved.getStatus() + ". Condition: " + saved.getItemCondition() + ". Damaged: " + saved.getDamagedQty())
                 .build();
         auditLogRepository.save(audit);
+
+        notificationService.createNotification(
+                saved.getPurchaseOrder().getRequisition().getCreatedBy().getUsername(),
+                "Goods Received (Pending Verification)",
+                "Goods received for PO " + saved.getPurchaseOrder().getPoNumber() + " and are pending verification.",
+                "Receiving",
+                saved.getPurchaseOrder().getPoId()
+        );
 
         return saved;
     }
@@ -69,6 +85,17 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
         existing.setReceivedBy(receipt.getReceivedBy());
         POReceipt updated = save(existing);
         updatePOStatusOnReceiptChange(updated.getPurchaseOrder().getPoId());
+        
+        if (updated.getStatus().startsWith("VERIFIED")) {
+            notificationService.createNotification(
+                    updated.getPurchaseOrder().getRequisition().getCreatedBy().getUsername(),
+                    "Goods Verification Complete",
+                    "Goods for PO " + updated.getPurchaseOrder().getPoNumber() + " have been " + updated.getStatus().replace("VERIFIED_", "").toLowerCase() + ".",
+                    "Receiving",
+                    updated.getPurchaseOrder().getPoId()
+            );
+        }
+
         return updated;
     }
 

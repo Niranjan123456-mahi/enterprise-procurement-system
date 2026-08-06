@@ -30,8 +30,10 @@ public class RequisitionService extends BaseService<Requisition, Long> {
     private final ApprovalRuleRepository approvalRuleRepository;
     private final ApprovalRuleApproverRepository approvalRuleApproverRepository;
     private final RequisitionHistoryRepository requisitionHistoryRepository;
-    private final AuditLogRepository auditLogRepository;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RoleRepository roleRepository;
 
     public RequisitionService(RequisitionRepository repository,
                               UserRepository userRepository,
@@ -41,8 +43,10 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                               ApprovalRuleRepository approvalRuleRepository,
                               ApprovalRuleApproverRepository approvalRuleApproverRepository,
                               RequisitionHistoryRepository requisitionHistoryRepository,
-                              AuditLogRepository auditLogRepository,
-                              ApplicationEventPublisher eventPublisher) {
+                              AuditLogService auditLogService,
+                              NotificationService notificationService,
+                              ApplicationEventPublisher eventPublisher,
+                              RoleRepository roleRepository) {
         super(repository);
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
@@ -51,8 +55,55 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         this.approvalRuleRepository = approvalRuleRepository;
         this.approvalRuleApproverRepository = approvalRuleApproverRepository;
         this.requisitionHistoryRepository = requisitionHistoryRepository;
-        this.auditLogRepository = auditLogRepository;
+        this.auditLogService = auditLogService;
+        this.notificationService = notificationService;
         this.eventPublisher = eventPublisher;
+        this.roleRepository = roleRepository;
+    }
+
+    // ---------------------------------------------------------------
+    // TIMELINE
+    // ---------------------------------------------------------------
+    public List<com.enterprise.procurement.dto.TimelineEvent> getRequisitionTimeline(Long id) {
+        Requisition req = findById(id);
+        
+        List<RequisitionHistory> history = requisitionHistoryRepository.findByRequisition(req);
+        List<AuditLog> audits = auditLogService.findAll().stream() // Ideally we would have a repository method for this
+                .filter(a -> ("Requisition".equals(a.getEntityName()) && id.equals(a.getEntityId())) ||
+                             (a.getRemarks() != null && (a.getRemarks().contains("REQ-" + id) || a.getRemarks().contains("Requisition " + id))))
+                .collect(Collectors.toList());
+
+        List<com.enterprise.procurement.dto.TimelineEvent> events = new java.util.ArrayList<>();
+        
+        for (RequisitionHistory h : history) {
+            String actor = h.getActionBy() != null ? (h.getActionBy().getFullName() != null ? h.getActionBy().getFullName() : h.getActionBy().getUsername()) : "System";
+            events.add(com.enterprise.procurement.dto.TimelineEvent.builder()
+                    .step(h.getStep())
+                    .actionBy(actor)
+                    .remarks(h.getRemarks())
+                    .actionDate(h.getActionDate())
+                    .build());
+        }
+        
+        for (AuditLog a : audits) {
+            events.add(com.enterprise.procurement.dto.TimelineEvent.builder()
+                    .step(a.getModule() + " " + a.getAction())
+                    .actionBy(a.getUser() != null ? a.getUser().getUsername() : "System")
+                    .remarks(a.getRemarks())
+                    .actionDate(a.getActionTime())
+                    .build());
+        }
+
+        // Merge and sort
+        events.sort(java.util.Comparator.comparing(com.enterprise.procurement.dto.TimelineEvent::getActionDate));
+        
+        // Deduplicate by remarks if they overlap
+        java.util.Map<String, com.enterprise.procurement.dto.TimelineEvent> unique = new java.util.LinkedHashMap<>();
+        for(com.enterprise.procurement.dto.TimelineEvent e : events) {
+            unique.put(e.getRemarks(), e);
+        }
+
+        return new java.util.ArrayList<>(unique.values());
     }
 
     // ---------------------------------------------------------------
@@ -92,6 +143,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         requisition.setNeededBy(request.getNeededBy());
         requisition.setTotalAmount(totalAmount);
         requisition.setStatus(RequisitionStatus.PENDING_APPROVAL);
+        requisition.setPriority(request.getPriority() != null ? request.getPriority() : "MEDIUM");
 
         List<RequisitionLineItem> lineItems = request.getItems().stream()
                 .map(item -> RequisitionLineItem.builder()
@@ -115,7 +167,9 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                 .entityId(savedRequisition.getRequisitionId())
                 .remarks("Created Requisition " + savedRequisition.getRequisitionNumber())
                 .build();
-        auditLogRepository.save(audit);
+        auditLogService.save(audit);
+
+        notificationService.createNotification(username, "Requisition Submitted", "Your Requisition " + savedRequisition.getRequisitionNumber() + " was submitted.", "Requisition", savedRequisition.getRequisitionId());
 
         return savedRequisition;
     }
@@ -140,8 +194,19 @@ public class RequisitionService extends BaseService<Requisition, Long> {
             }
         }
         
-        // Fallback chain: Manager (Role ID 3) -> Finance (Role ID 4)
-        return List.of(3L, 4L);
+        // Fallback enterprise logic based on amount
+        BigDecimal amt = requisition.getTotalAmount();
+        Role managerRole = roleRepository.findByRoleName("Manager").orElseThrow();
+        Role financeRole = roleRepository.findByRoleName("Finance").orElseThrow();
+        Role adminRole = roleRepository.findByRoleName("Admin").orElseThrow();
+
+        if (amt.compareTo(new BigDecimal("50000")) <= 0) {
+            return List.of(managerRole.getRoleId());
+        } else if (amt.compareTo(new BigDecimal("500000")) <= 0) {
+            return List.of(managerRole.getRoleId(), financeRole.getRoleId());
+        } else {
+            return List.of(managerRole.getRoleId(), financeRole.getRoleId(), adminRole.getRoleId());
+        }
     }
 
     @Transactional
@@ -156,9 +221,9 @@ public class RequisitionService extends BaseService<Requisition, Long> {
 
         List<Long> chainRoleIds = getApprovalChainRoleIds(requisition);
 
-        // Figure out which step we're on by counting completed "Approved" steps so far
+        // Figure out which step we're on by counting completed "Approved" steps so far in current cycle
         long completedSteps = requisitionHistoryRepository
-                .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
+                .countCurrentCycleApprovals(requisition.getRequisitionId());
 
         if (completedSteps >= chainRoleIds.size()) {
             throw new BadRequestException("This requisition has already completed its approval chain");
@@ -170,10 +235,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         boolean isCorrectApprover = user.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleId().equals(requiredRoleId));
 
-        boolean isAdmin = user.getUserRoles().stream()
-                .anyMatch(userRole -> "Admin".equalsIgnoreCase(userRole.getRole().getRoleName()));
-
-        if (!isCorrectApprover && !isAdmin) {
+        if (!isCorrectApprover) {
             String requiredRoleName = "Role ID " + requiredRoleId;
             if (requiredRoleId == 3L) requiredRoleName = "Manager";
             else if (requiredRoleId == 4L) requiredRoleName = "Finance";
@@ -200,8 +262,12 @@ public class RequisitionService extends BaseService<Requisition, Long> {
             requisition.setStatus(RequisitionStatus.REJECTED);
             createHistory(requisition, user, "Rejected", request.getRemarks());
 
+        } else if ("RETURN".equals(action) || "RETURNED".equals(action)) {
+            requisition.setStatus(RequisitionStatus.RETURNED);
+            createHistory(requisition, user, "Returned", request.getRemarks());
+
         } else {
-            throw new BadRequestException("Action must be either APPROVE or REJECT");
+            throw new BadRequestException("Action must be APPROVE, REJECT, or RETURN");
         }
 
         Requisition savedRequisition = save(requisition);
@@ -215,9 +281,39 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                 .entityId(savedRequisition.getRequisitionId())
                 .remarks("Requisition " + action + " by " + user.getUsername() + (request.getRemarks() != null ? " — " + request.getRemarks() : ""))
                 .build();
-        auditLogRepository.save(audit);
+        auditLogService.save(audit);
 
         return savedRequisition;
+    }
+
+    public List<String> getApprovalChainNames(Long categoryId, BigDecimal amount, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+
+        Department department = departmentRepository.findById(user.getDepartment().getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found for current user"));
+
+        Optional<ApprovalRule> matchingRule = approvalRuleRepository
+                .findMatchingRule(department.getDepartmentId(), categoryId, amount);
+
+        if (matchingRule.isPresent()) {
+            List<ApprovalRuleApprover> chain = approvalRuleApproverRepository
+                    .findByRule_RuleIdOrderBySequenceNoAsc(matchingRule.get().getRuleId());
+            if (!chain.isEmpty()) {
+                return chain.stream()
+                        .map(approver -> approver.getRole().getRoleName())
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        // Fallback enterprise logic
+        if (amount.compareTo(new BigDecimal("50000")) <= 0) {
+            return List.of("Manager");
+        } else if (amount.compareTo(new BigDecimal("500000")) <= 0) {
+            return List.of("Manager", "Finance");
+        } else {
+            return List.of("Manager", "Finance", "Admin");
+        }
     }
 
     // ---------------------------------------------------------------
@@ -242,13 +338,6 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         List<Requisition> pending = ((RequisitionRepository) repository)
                 .findByStatusOrderByCreatedAtDesc(RequisitionStatus.PENDING_APPROVAL);
 
-        boolean isAdmin = user.getUserRoles().stream()
-                .anyMatch(userRole -> "Admin".equalsIgnoreCase(userRole.getRole().getRoleName()));
-
-        if (isAdmin) {
-            return pending; // Admins see everything pending!
-        }
-
         List<Long> userRoleIds = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getRoleId())
                 .collect(Collectors.toList());
@@ -258,11 +347,18 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                 .collect(Collectors.toList());
     }
 
+    public List<Requisition> findMyApprovals(String username) {
+        return requisitionHistoryRepository.findByActionBy_Username(username).stream()
+                .map(RequisitionHistory::getRequisition)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     private boolean isCurrentUsersTurn(Requisition requisition, List<Long> userRoleIds) {
         List<Long> chainRoleIds = getApprovalChainRoleIds(requisition);
 
         long completedSteps = requisitionHistoryRepository
-                .countByRequisition_RequisitionIdAndStep(requisition.getRequisitionId(), "Approved");
+                .countCurrentCycleApprovals(requisition.getRequisitionId());
         if (completedSteps >= chainRoleIds.size()) return false;
 
         Long requiredRoleId = chainRoleIds.get((int) completedSteps);
@@ -307,6 +403,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         existing.setNeededBy(requisition.getNeededBy());
         existing.setTotalAmount(requisition.getTotalAmount());
         existing.setStatus(requisition.getStatus());
+        existing.setPriority(requisition.getPriority());
         return save(existing);
     }
 }

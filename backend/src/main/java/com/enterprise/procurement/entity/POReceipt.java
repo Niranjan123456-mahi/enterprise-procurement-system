@@ -34,6 +34,21 @@ public class POReceipt {
     @Column(name = "received_date")
     private LocalDate receivedDate;
 
+    @Column(name = "damaged_qty")
+    private Integer damagedQty;
+
+    @Column(name = "item_condition")
+    private String itemCondition;
+
+    @Column(name = "warehouse")
+    private String warehouse;
+
+    @Column(name = "remarks", length = 1000)
+    private String remarks;
+
+    @Column(name = "status")
+    private String status;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "received_by")
     private User receivedBy;

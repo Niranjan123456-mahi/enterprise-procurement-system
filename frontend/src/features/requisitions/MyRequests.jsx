@@ -1,13 +1,19 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../api";
-import "./MyRequests.css";
+import { renderStatusBadge } from "../../utils/statusBadge";
+import EnterpriseTable from "../../components/EnterpriseTable";
 import RequestDetail from "./RequestDetail";
+import "./MyRequests.css";
 
-function MyRequests({ user }) {
+export default function MyRequests({ user }) {
   const [myRequests, setMyRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState("");
+
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   useEffect(() => {
     async function loadRequests() {
@@ -22,8 +28,6 @@ function MyRequests({ user }) {
     }
     loadRequests();
   }, [user.token]);
-
-  const [selectedRequest, setSelectedRequest] = useState(null);
 
   async function handleRowClick(r) {
     setLoadingDetail(true);
@@ -52,6 +56,7 @@ function MyRequests({ user }) {
         }));
 
       setSelectedRequest({
+        requisitionId: r.requisitionId,
         id: r.requisitionNumber,
         title: r.title,
         status: r.status,
@@ -70,61 +75,96 @@ function MyRequests({ user }) {
       <RequestDetail
         request={selectedRequest}
         onBack={() => setSelectedRequest(null)}
+        user={user}
       />
     );
   }
 
-  return (
-    <div className="myreq-page">
-      <h1>My Requests</h1>
-      <p className="myreq-subtext">Requests you have submitted so far</p>
-      {error && <p className="myreq-error" style={{ color: "red" }}>{error}</p>}
-      {loadingDetail && <p style={{ color: "var(--primary-color)" }}>Loading request details...</p>}
+  const filteredRequests = myRequests.filter((r) => {
+    const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+    const matchesPriority = priorityFilter === 'ALL' || (r.priority || 'MEDIUM') === priorityFilter;
+    return matchesStatus && matchesPriority;
+  });
 
-      <div className="myreq-table-card">
+  const tableHeaders = [
+    { label: "PR Number", field: "requisitionNumber" },
+    { label: "Subject / Title", field: "title" },
+    { label: "Needed By Date", field: "neededBy" },
+    { 
+      label: "Estimated Total", 
+      field: "totalAmount", 
+      align: "right",
+      render: (row, val) => `₹ ${(val || 0).toLocaleString()}`
+    },
+    { 
+      label: "Status Label", 
+      field: "status",
+      render: (row, val) => renderStatusBadge(val)
+    }
+  ];
+
+  return (
+    <div className="myreq-page" style={{ maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--font-body)' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 className="page-title">My Purchase Requests</h1>
+        <p className="page-subtext">Requests you have submitted so far for approvals</p>
+      </div>
+
+      {error && (
+        <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px' }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {loadingDetail && (
+        <div style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px', fontWeight: '600' }}>
+          Compiling requisition details data...
+        </div>
+      )}
+
+      {/* Controls Container */}
+      <div className="myreq-controls" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px', justifyContent: 'flex-end' }}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px', backgroundColor: 'white', outline: 'none' }}
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING_APPROVAL">Pending Approval</option>
+          <option value="APPROVED">Approved</option>
+          <option value="ORDER_CREATED">Order Created</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px', backgroundColor: 'white', outline: 'none' }}
+        >
+          <option value="ALL">All Priorities</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+        </select>
+      </div>
+
+      {/* Enterprise Table layout */}
+      <div className="zoho-card" style={{ padding: '0', overflow: 'hidden', border: 'none' }}>
         {loading ? (
-          <p className="myreq-loading" style={{ padding: "1.5rem" }}>Loading your requests...</p>
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <p>Gathering requests database entries...</p>
+          </div>
         ) : (
-          <table className="myreq-table">
-            <thead>
-              <tr>
-                <th>PR #</th>
-                <th>Title</th>
-                <th>Needed by</th>
-                <th>Total</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {myRequests.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "1.5rem" }}>No requests found.</td>
-                </tr>
-              ) : (
-                myRequests.map((r) => (
-                  <tr
-                    key={r.requisitionId}
-                    className="myreq-clickable-row"
-                    onClick={() => handleRowClick(r)}
-                  >
-                    <td>{r.requisitionNumber}</td>
-                    <td>{r.title}</td>
-                    <td>{r.neededBy}</td>
-                    <td>₹ {(r.totalAmount || 0).toLocaleString()}</td>
-                    <td>
-                      <span className={"myreq-badge myreq-" + r.status.toLowerCase()}>
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <EnterpriseTable
+            headers={tableHeaders}
+            data={filteredRequests}
+            itemsPerPage={10}
+            onRowClick={(row) => handleRowClick(row)}
+            emptyMessage="No purchase requests found."
+            exportFilename="my_purchase_requests.csv"
+          />
         )}
       </div>
     </div>
   );
 }
-
-export default MyRequests;

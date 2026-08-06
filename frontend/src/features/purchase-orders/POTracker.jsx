@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "../../api";
 import "./POTracker.css";
 import PODetail from "./PODetail";
+import EnterpriseTable from "../../components/EnterpriseTable";
 
 function POTracker({ user }) {
   const [orders, setOrders] = useState([]);
@@ -24,11 +25,11 @@ function POTracker({ user }) {
   }, [user.token]);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
-  function stageClass(stage) {
-    if (!stage) return "stage-unknown";
-    return "stage-" + stage.toLowerCase().replace(/ /g, "-");
-  }
+  const filteredOrders = orders.filter((order) => {
+    return statusFilter === 'ALL' || order.status === statusFilter || order.stage === statusFilter;
+  });
 
   async function loadOrderDetail(po) {
     setLoadingDetail(true);
@@ -101,63 +102,90 @@ function POTracker({ user }) {
     }
   }
 
+  async function handleStatusChange(poId, newStatus) {
+    try {
+      await apiFetch(`/api/purchase-orders/${poId}/supplier-status?status=${newStatus}`, { method: "PUT" }, user.token);
+      
+      const updatedList = await apiFetch("/api/purchase-orders", {}, user.token);
+      setOrders(updatedList);
+      
+      const updatedPo = updatedList.find(o => o.poId === poId);
+      if (updatedPo) {
+        await loadOrderDetail(updatedPo);
+      }
+    } catch (err) {
+      alert("Failed to update status.");
+    }
+  }
+
   if (selectedOrder !== null) {
     return (
       <PODetail
         order={selectedOrder}
         onRecordReceipt={handleRecordReceipt}
+        onStatusChange={handleStatusChange}
         onBack={() => setSelectedOrder(null)}
+        user={user}
       />
     );
   }
 
+  const headers = [
+    { field: 'poNumber', label: 'PO #' },
+    { field: 'supplier.supplierName', label: 'Vendor' },
+    { field: 'createdDate', label: 'Created' },
+    {
+      field: 'total',
+      label: 'Total Amount',
+      align: 'right',
+      render: (row) => `₹ ${(row.requisition?.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    },
+    {
+      field: 'stage',
+      label: 'Stage',
+      render: (row) => (
+        <span className={`status-badge status-${(row.stage || 'CREATED').toLowerCase().replace(/_/g, '-')}`}>
+          {row.stage}
+        </span>
+      )
+    }
+  ];
+
   return (
     <div className="po-page">
-      <h1>Purchase Orders</h1>
-      <p className="po-subtext">Orders issued to your vendors</p>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: '700', color: '#111827', margin: '0 0 6px 0' }}>Purchase Orders</h1>
+        <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>Manage and track corporate vendor distributions and delivery stages</p>
+      </div>
+
       {error && <p className="po-error" style={{ color: "red" }}>{error}</p>}
       {loadingDetail && <p style={{ color: "var(--primary-color)" }}>Loading details...</p>}
 
-      <div className="po-table-card">
+      {/* Controls Container */}
+      <div className="po-controls" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px', justifyContent: 'flex-end' }}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '14px', backgroundColor: 'white', outline: 'none' }}
+        >
+          <option value="ALL">All Delivery Statuses</option>
+          <option value="CREATED">Created</option>
+          <option value="PARTIALLY_DELIVERED">Partially Delivered</option>
+          <option value="FULLY_DELIVERED">Fully Delivered</option>
+        </select>
+      </div>
+
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', overflow: 'hidden' }}>
         {loading ? (
-          <p style={{ padding: "1.5rem" }}>Loading purchase orders...</p>
+          <p style={{ padding: "1.5rem", color: '#6b7280' }}>Loading purchase orders...</p>
         ) : (
-          <table className="po-table">
-            <thead>
-              <tr>
-                <th>PO #</th>
-                <th>Vendor</th>
-                <th>Created</th>
-                <th>Total</th>
-                <th>Stage</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "1.5rem" }}>No purchase orders found.</td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr
-                    key={order.poId}
-                    className="po-clickable-row"
-                    onClick={() => loadOrderDetail(order)}
-                  >
-                    <td>{order.poNumber}</td>
-                    <td>{order.supplier?.supplierName || "—"}</td>
-                    <td>{order.createdDate}</td>
-                    <td>₹ {(order.requisition?.totalAmount || 0).toLocaleString()}</td>
-                    <td>
-                      <span className={"po-stage-badge " + stageClass(order.stage)}>
-                        {order.stage}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <EnterpriseTable
+            headers={headers}
+            data={filteredOrders}
+            itemsPerPage={8}
+            onRowClick={(row) => loadOrderDetail(row)}
+            emptyMessage="No purchase orders found."
+          />
         )}
       </div>
     </div>

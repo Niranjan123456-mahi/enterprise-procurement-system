@@ -27,17 +27,57 @@ public class PurchaseOrderController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all purchase orders", description = "Retrieve a list of all purchase orders")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
-    public ResponseEntity<List<PurchaseOrder>> getAll() {
-        return ResponseEntity.ok(service.findAll());
+    @Operation(summary = "Get purchase orders", description = "Retrieve a list of purchase orders based on role")
+    public ResponseEntity<List<PurchaseOrder>> getAll(org.springframework.security.core.Authentication authentication) {
+        boolean isAdminOrFinanceOrReceiver = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin") || a.getAuthority().equals("ROLE_Finance") || a.getAuthority().equals("ROLE_Receiver"));
+
+        boolean isManager = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Manager"));
+
+        List<PurchaseOrder> allPos = service.findAll();
+        
+        if (isAdminOrFinanceOrReceiver) {
+            return ResponseEntity.ok(allPos);
+        } else if (isManager) {
+            // TODO: In a full implementation, filter by Manager's department.
+            // For now, allow managers to view all POs to unblock workflow.
+            return ResponseEntity.ok(allPos);
+        } else {
+            // For Requesters, show only POs generated from their own requisitions
+            List<PurchaseOrder> myPos = allPos.stream()
+                    .filter(po -> po.getRequisition() != null && 
+                                  po.getRequisition().getCreatedBy() != null &&
+                                  authentication.getName().equals(po.getRequisition().getCreatedBy().getUsername()))
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(myPos);
+        }
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get purchase order by ID", description = "Retrieve details of a specific purchase order by ID")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver', 'Finance')")
-    public ResponseEntity<PurchaseOrder> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    public ResponseEntity<PurchaseOrder> getById(@PathVariable Long id, org.springframework.security.core.Authentication authentication) {
+        PurchaseOrder po = service.findById(id);
+        boolean isAdminOrFinanceOrReceiver = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin") || a.getAuthority().equals("ROLE_Finance") || a.getAuthority().equals("ROLE_Receiver"));
+        
+        boolean isManager = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Manager"));
+
+        if (!isAdminOrFinanceOrReceiver && !isManager && (po.getRequisition() == null || po.getRequisition().getCreatedBy() == null || !authentication.getName().equals(po.getRequisition().getCreatedBy().getUsername()))) {
+             return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(po);
+    }
+
+    @PutMapping("/{id}/supplier-status")
+    @Operation(summary = "Update supplier status", description = "Update the supplier status of a purchase order (e.g. ACCEPTED, IN_TRANSIT, DELIVERED)")
+    @PreAuthorize("hasAnyRole('Admin', 'Finance')") // Simulating supplier portal action for now
+    public ResponseEntity<PurchaseOrder> updateSupplierStatus(@PathVariable Long id, @RequestParam String status) {
+        PurchaseOrder po = service.findById(id);
+        po.setStatus(status);
+        po.setStage(status);
+        return ResponseEntity.ok(service.save(po));
     }
 
     @PostMapping

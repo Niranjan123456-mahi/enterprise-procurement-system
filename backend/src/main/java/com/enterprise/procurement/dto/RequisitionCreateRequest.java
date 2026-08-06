@@ -27,6 +27,8 @@ public class RequisitionCreateRequest {
 
     private Long supplierId;
 
+    private String priority;
+
     @Valid
     @NotEmpty(message = "Requisition must contain at least one line item")
     private List<LineItemRequest> items;

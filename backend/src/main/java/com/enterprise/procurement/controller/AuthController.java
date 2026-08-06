@@ -67,50 +67,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new RegisterResponse("Username is already taken", null));
-        }
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new RegisterResponse("Email is already registered", null));
-        }
-
-        String empId = request.getEmployeeId();
-        if (empId == null || empId.trim().isEmpty()) {
-            long count = userRepository.count();
-            empId = "EMP" + String.format("%03d", count + 1);
-            while (userRepository.findByEmployeeId(empId).isPresent()) {
-                count++;
-                empId = "EMP" + String.format("%03d", count + 1);
-            }
-        } else {
-            if (userRepository.findByEmployeeId(empId).isPresent()) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(new RegisterResponse("Employee ID is already in use", null));
-            }
-        }
-
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id " + request.getDepartmentId()));
-
-        User user = User.builder()
-                .department(department)
-                .employeeId(empId)
-                .username(request.getUsername())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .designation(request.getDesignation())
-                .status("ACTIVE")
-                .build();
-
-        User savedUser = userService.save(user);
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new RegisterResponse("User registered successfully", savedUser.getUserId()));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new RegisterResponse("Public registration is disabled. Please contact your system administrator for access.", null));
     }
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthController.class);
@@ -153,6 +111,15 @@ public class AuthController {
                         .map(ur -> ur.getRole().getRoleName())
                         .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new LoginResponse(token, "Bearer", userDetails.getUsername(), roles));
+        return ResponseEntity.ok(LoginResponse.builder()
+                .accessToken(token)
+                .tokenType("Bearer")
+                .username(userDetails.getUsername())
+                .roles(roles)
+                .userId(user.getUserId())
+                .fullName(user.getFullName())
+                .departmentId(user.getDepartment() != null ? user.getDepartment().getDepartmentId() : null)
+                .departmentName(user.getDepartment() != null ? user.getDepartment().getDepartmentName() : null)
+                .build());
     }
 }
