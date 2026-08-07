@@ -288,6 +288,16 @@
   background-color: #b91c1c;
 }
 
+.btn-card-action.return {
+  background-color: #fff7ed;
+  color: #b45309;
+  border: 1px solid #fed7aa;
+}
+
+.btn-card-action.return:hover {
+  background-color: #ffedd5;
+}
+
 .approval-empty-state {
   text-align: center;
   padding: 60px 20px;

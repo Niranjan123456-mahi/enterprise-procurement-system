@@ -98,7 +98,6 @@ export default function DashboardLayout({ user, onLogout, children }) {
           { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
           { path: '/requisitions/new', label: 'New Request', icon: <ClipboardList size={20} /> },
           { path: '/requisitions', label: 'My Requests', icon: <ClipboardList size={20} /> },
-          { path: '/requisitions?tab=tracking', label: 'Request Tracking', icon: <Clock size={20} /> },
           { path: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCart size={20} /> },
           { path: '/profile', label: 'Profile', icon: <UserCircle size={20} /> }
         ]
@@ -166,8 +165,57 @@ export default function DashboardLayout({ user, onLogout, children }) {
     return defaultGroups;
   };
 
+  // Each canonical role's distinctive nav items (excluding Dashboard/Profile,
+  // which every role gets and which get de-duplicated below).
+  const ROLE_ITEMS = {
+    [REQUESTER]: [
+      { path: '/requisitions/new', label: 'New Request', icon: <ClipboardList size={20} /> },
+      { path: '/requisitions', label: 'My Requests', icon: <ClipboardList size={20} /> },
+      { path: '/purchase-orders', label: 'Purchase Orders', icon: <ShoppingCart size={20} /> },
+    ],
+    [APPROVER]: [
+      { path: '/approvals', label: 'Pending Approvals', icon: <BadgeCheck size={20} /> },
+      { path: '/approvals?tab=history', label: 'Approval History', icon: <BadgeCheck size={20} /> },
+    ],
+    [FINANCE]: [
+      { path: '/approvals', label: 'Finance Approvals', icon: <Wallet size={20} /> },
+      { path: '/payments', label: 'Payments & Invoices', icon: <Wallet size={20} /> },
+      { path: '/reports', label: 'Reports', icon: <BarChart3 size={20} /> },
+    ],
+    [RECEIVER]: [
+      { path: '/receiving', label: 'Goods Receiving', icon: <PackageCheck size={20} /> },
+      { path: '/purchase-orders', label: 'Completed Deliveries', icon: <ShoppingCart size={20} /> },
+    ],
+  };
+
+  // A user can hold multiple roles (assigned via Admin > Roles). The base
+  // sidebar above is built from just their highest-privilege role, so any
+  // extra role's items (e.g. a Manager who was also granted Requester)
+  // need to be merged in here - otherwise granting the extra role via the
+  // Roles admin page has no visible effect.
+  const applyAdditionalRoleItems = (groups, allRoles, primaryRole) => {
+    if (!groups.length || !Array.isArray(allRoles)) return groups;
+    const targetGroup = groups[0];
+    const existingPaths = new Set(targetGroup.items.map((i) => i.path));
+
+    allRoles
+      .filter((r) => r !== primaryRole && ROLE_ITEMS[r])
+      .forEach((extraRole) => {
+        ROLE_ITEMS[extraRole].forEach((item) => {
+          if (!existingPaths.has(item.path)) {
+            // Insert right after Dashboard (index 0) rather than at the end,
+            // so newly-granted actions like "New Request" are prominent.
+            targetGroup.items.splice(1, 0, item);
+            existingPaths.add(item.path);
+          }
+        });
+      });
+
+    return groups;
+  };
+
   const primaryRole = user?.role || REQUESTER;
-  const sidebarGroups = getSidebarGroups(primaryRole);
+  const sidebarGroups = applyAdditionalRoleItems(getSidebarGroups(primaryRole), user?.roles, primaryRole);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -220,8 +268,6 @@ export default function DashboardLayout({ user, onLogout, children }) {
                         let active = isActive;
                         const search = location.search;
                         // Custom logic to prevent dual active classes
-                        if (item.label === 'My Requests' && search.includes('tab=tracking')) active = false;
-                        if (item.label === 'Request Tracking' && !search.includes('tab=tracking')) active = false;
                         if (item.label === 'Pending Approvals' && search.includes('tab=history')) active = false;
                         if (item.label === 'Approval History' && !search.includes('tab=history')) active = false;
                         if (item.label === 'Finance Approvals' && search.includes('tab=payments')) active = false;

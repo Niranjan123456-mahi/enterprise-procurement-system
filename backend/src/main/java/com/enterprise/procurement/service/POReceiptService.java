@@ -39,6 +39,33 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
         receipt.setReceivedBy(user);
+
+        if (receipt.getPurchaseOrder() == null || receipt.getPurchaseOrder().getPoId() == null) {
+            throw new IllegalArgumentException("A purchase order must be specified for this receipt.");
+        }
+        PurchaseOrder po = purchaseOrderRepository.findById(receipt.getPurchaseOrder().getPoId())
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found."));
+
+        if (po.getLineItems() != null && receipt.getDescription() != null) {
+            List<POReceipt> existingReceipts = ((POReceiptRepository) repository).findByPurchaseOrder_PoId(po.getPoId());
+            for (POLineItem item : po.getLineItems()) {
+                if (item.getDescription() != null && item.getDescription().equalsIgnoreCase(receipt.getDescription())) {
+                    int alreadyReceived = existingReceipts.stream()
+                            .filter(r -> r.getDescription() != null && r.getDescription().equalsIgnoreCase(item.getDescription()))
+                            .mapToInt(r -> r.getQtyReceived() != null ? r.getQtyReceived() : 0)
+                            .sum();
+                    int ordered = item.getOrderedQty() != null ? item.getOrderedQty() : 0;
+                    int incomingQty = receipt.getQtyReceived() != null ? receipt.getQtyReceived() : 0;
+                    int outstanding = ordered - alreadyReceived;
+                    if (incomingQty > outstanding) {
+                        throw new IllegalArgumentException(
+                                "Cannot receive " + incomingQty + " units of \"" + item.getDescription() +
+                                "\" — only " + outstanding + " unit(s) are outstanding on this Purchase Order.");
+                    }
+                    break;
+                }
+            }
+        }
         
         if (receipt.getStatus() == null) {
             receipt.setStatus("PENDING_VERIFICATION");
@@ -83,6 +110,11 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
         existing.setQtyReceived(receipt.getQtyReceived());
         existing.setReceivedDate(receipt.getReceivedDate());
         existing.setReceivedBy(receipt.getReceivedBy());
+        existing.setStatus(receipt.getStatus());
+        existing.setDamagedQty(receipt.getDamagedQty());
+        existing.setItemCondition(receipt.getItemCondition());
+        existing.setWarehouse(receipt.getWarehouse());
+        existing.setRemarks(receipt.getRemarks());
         POReceipt updated = save(existing);
         updatePOStatusOnReceiptChange(updated.getPurchaseOrder().getPoId());
         

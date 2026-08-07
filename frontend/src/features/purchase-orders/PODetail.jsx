@@ -15,7 +15,12 @@ export default function PODetail({ order, onRecordReceipt, onBack, onStatusChang
 
   function recordReceipt(index) {
     const qty = parseFloat(receiveInputs[index]);
+    const outstanding = items[index].ordered - (items[index].received || 0);
     if (!qty || qty <= 0) {
+      return;
+    }
+    if (qty > outstanding) {
+      alert(`Cannot receive ${qty} units — only ${outstanding} unit(s) are outstanding for this line item.`);
       return;
     }
 

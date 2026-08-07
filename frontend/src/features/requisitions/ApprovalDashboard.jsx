@@ -323,19 +323,19 @@ function ApprovalDashboard({ user }) {
                         {activeTab === 'pending' ? (
                         <>
                           <button
-                            className="btn-reject"
+                            className="btn-card-action reject"
                             onClick={() => openActionModal(r.requisitionId, r.requisitionNumber, "REJECT")}
                           >
                             Reject
                           </button>
                           <button
-                            className="btn-return"
+                            className="btn-card-action return"
                             onClick={() => openActionModal(r.requisitionId, r.requisitionNumber, "RETURN")}
                           >
                             Return
                           </button>
                           <button
-                            className="btn-approve"
+                            className="btn-card-action approve"
                             onClick={() => openActionModal(r.requisitionId, r.requisitionNumber, "APPROVE")}
                           >
                             Approve
@@ -343,7 +343,7 @@ function ApprovalDashboard({ user }) {
                         </>
                       ) : (
                         <button
-                          className="btn-secondary"
+                          className="btn-card-action secondary"
                           style={{ width: '100%' }}
                           onClick={() => navigate(`/requisitions/${r.requisitionId}`)}
                         >

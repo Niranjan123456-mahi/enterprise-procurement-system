@@ -33,7 +33,7 @@
 
 .sidebar-logo-image {
   height: 56px;
-  max-width: 56px;
+  max-width: 100px;
   object-fit: contain;
 }
 

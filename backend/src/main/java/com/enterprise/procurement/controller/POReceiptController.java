@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/po-receipts")
@@ -27,16 +28,59 @@ public class POReceiptController {
         this.service = service;
     }
 
+    // SECURITY FIX: this previously returned every receipt across every
+    // purchase order in the company to any authenticated user. Now applies
+    // the same visibility rule used everywhere else: Admin/Finance/Receiver/
+    // Manager see everything; a Requester only sees receipts belonging to
+    // POs generated from their own requisitions.
     @GetMapping
-    @Operation(summary = "Get all PO receipts", description = "Retrieve a list of all purchase order receipts")
-    public ResponseEntity<List<POReceipt>> getAll() {
-        return ResponseEntity.ok(service.findAll());
+    @Operation(summary = "Get all PO receipts", description = "Retrieve a list of purchase order receipts visible to the current user")
+    public ResponseEntity<List<POReceipt>> getAll(Authentication authentication) {
+        boolean canViewAll = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_Finance")
+                        || a.getAuthority().equals("ROLE_Receiver")
+                        || a.getAuthority().equals("ROLE_Manager"));
+
+        List<POReceipt> all = service.findAll();
+
+        if (canViewAll) {
+            return ResponseEntity.ok(all);
+        }
+
+        List<POReceipt> ownOnly = all.stream()
+                .filter(receipt -> receipt.getPurchaseOrder() != null
+                        && receipt.getPurchaseOrder().getRequisition() != null
+                        && receipt.getPurchaseOrder().getRequisition().getCreatedBy() != null
+                        && authentication.getName().equals(
+                                receipt.getPurchaseOrder().getRequisition().getCreatedBy().getUsername()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ownOnly);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get PO receipt by ID", description = "Retrieve details of a specific receipt by ID")
-    public ResponseEntity<POReceipt> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    public ResponseEntity<POReceipt> getById(@PathVariable Long id, Authentication authentication) {
+        POReceipt receipt = service.findById(id);
+
+        boolean canViewAll = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_Finance")
+                        || a.getAuthority().equals("ROLE_Receiver")
+                        || a.getAuthority().equals("ROLE_Manager"));
+
+        boolean ownsIt = receipt.getPurchaseOrder() != null
+                && receipt.getPurchaseOrder().getRequisition() != null
+                && receipt.getPurchaseOrder().getRequisition().getCreatedBy() != null
+                && authentication.getName().equals(
+                        receipt.getPurchaseOrder().getRequisition().getCreatedBy().getUsername());
+
+        if (!canViewAll && !ownsIt) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(receipt);
     }
 
     @PostMapping

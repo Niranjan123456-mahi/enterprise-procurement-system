@@ -32,7 +32,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // If the backend rejects the token (e.g., it expired), force a logout
       localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
+      localStorage.removeItem('user');
       window.location.href = '/login'; // Redirect to the new login page
     }
     return Promise.reject(error);
@@ -59,7 +59,7 @@ export async function apiFetch(path, options = {}, token) {
 
   if (response.status === 401) {
     localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
+    localStorage.removeItem('user');
     window.location.href = '/login';
   }
 
