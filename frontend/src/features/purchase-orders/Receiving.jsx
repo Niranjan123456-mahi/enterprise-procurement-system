@@ -75,7 +75,7 @@ export default function Receiving({ user }) {
   async function handleRecordReceipt(poId, receiptData) {
     try {
       const payload = {
-        purchaseOrder: { poId: poId },
+        poId: poId,
         description: receiptData.description,
         qtyReceived: parseInt(receiptData.qty),
         damagedQty: parseInt(receiptData.damagedQty) || 0,

@@ -22,12 +22,8 @@ public class RequisitionApprovedListener {
     public void handleRequisitionApproved(RequisitionApprovedEvent event) {
         log.info("[EVENT_LISTENER] Requisition approved event received for requisition ID: {}. Generating Purchase Order...", 
                 event.getRequisition().getRequisitionId());
-        try {
-            PurchaseOrder po = purchaseOrderService.createFromRequisition(event.getRequisition());
-            log.info("[EVENT_LISTENER] Purchase Order generated successfully: {}", po.getPoNumber());
-        } catch (Exception e) {
-            log.error("[EVENT_LISTENER] Failed to generate Purchase Order automatically for requisition ID: {}. Error: {}", 
-                    event.getRequisition().getRequisitionId(), e.getMessage(), e);
-        }
+        
+        PurchaseOrder po = purchaseOrderService.createFromRequisition(event.getRequisition());
+        log.info("[EVENT_LISTENER] Purchase Order generated successfully: {}", po.getPoNumber());
     }
 }

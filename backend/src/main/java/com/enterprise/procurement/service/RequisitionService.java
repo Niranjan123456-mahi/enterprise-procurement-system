@@ -286,6 +286,35 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         return savedRequisition;
     }
 
+    @Transactional
+    public Requisition updateSupplier(Long id, Long supplierId, String adminUsername) {
+        Requisition requisition = findById(id);
+        
+        Supplier supplier = supplierRepository.findById(supplierId)
+            .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
+            
+        requisition.setSupplier(supplier);
+        
+        User admin = userRepository.findByUsername(adminUsername)
+            .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
+        
+        // Log Audit
+        AuditLog audit = AuditLog.builder()
+            .user(admin)
+            .module("Requisition")
+            .action("SUPPLIER_CORRECTED")
+            .entityName("Requisition")
+            .entityId(id)
+            .remarks("Supplier assigned to repair legacy requisition before PO generation.")
+            .build();
+        auditLogService.save(audit);
+        
+        // Add to history so it appears in the approval timeline
+        createHistory(requisition, admin, "Supplier Corrected", "Supplier missing in legacy requisition was assigned by Admin.");
+        
+        return repository.save(requisition);
+    }
+
     public List<String> getApprovalChainNames(Long categoryId, BigDecimal amount, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));

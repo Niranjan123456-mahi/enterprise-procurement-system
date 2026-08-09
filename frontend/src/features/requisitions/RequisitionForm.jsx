@@ -143,8 +143,8 @@ export default function RequisitionForm({ user }) {
     setError("");
     setSuccess("");
 
-    if (!title || !neededBy || !categoryId) {
-      setError("Requisition Title, Category, and Needed By Date are required.");
+    if (!title || !neededBy || !categoryId || !supplierId) {
+      setError("Requisition Title, Category, Supplier, and Needed By Date are required.");
       return;
     }
 

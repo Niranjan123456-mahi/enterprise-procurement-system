@@ -112,6 +112,18 @@ public class RequisitionController {
         return ResponseEntity.ok(service.actOnRequisition(id, actionReq, authentication.getName()));
     }
 
+    @PatchMapping("/{id}/supplier")
+    @PreAuthorize("hasRole('Admin')")
+    public ResponseEntity<Requisition> updateSupplier(@PathVariable Long id, 
+                                                      @RequestBody java.util.Map<String, Long> payload, 
+                                                      Authentication authentication) {
+        Long supplierId = payload.get("supplierId");
+        if (supplierId == null) {
+            throw new IllegalArgumentException("Supplier ID is required");
+        }
+        return ResponseEntity.ok(service.updateSupplier(id, supplierId, authentication.getName()));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<Requisition> update(@PathVariable Long id,

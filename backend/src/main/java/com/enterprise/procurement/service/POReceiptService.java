@@ -35,16 +35,28 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
     }
 
     @Transactional
-    public POReceipt saveReceipt(POReceipt receipt, String username) {
+    public POReceipt saveReceipt(com.enterprise.procurement.dto.POReceiptCreateRequest request, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
-        receipt.setReceivedBy(user);
-
-        if (receipt.getPurchaseOrder() == null || receipt.getPurchaseOrder().getPoId() == null) {
+                
+        if (request.getPoId() == null) {
             throw new IllegalArgumentException("A purchase order must be specified for this receipt.");
         }
-        PurchaseOrder po = purchaseOrderRepository.findById(receipt.getPurchaseOrder().getPoId())
+        
+        PurchaseOrder po = purchaseOrderRepository.findById(request.getPoId())
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found."));
+                
+        POReceipt receipt = new POReceipt();
+        receipt.setPurchaseOrder(po);
+        receipt.setReceivedBy(user);
+        receipt.setDescription(request.getDescription());
+        receipt.setQtyReceived(request.getQtyReceived());
+        receipt.setReceivedDate(request.getReceivedDate());
+        receipt.setDamagedQty(request.getDamagedQty());
+        receipt.setItemCondition(request.getItemCondition());
+        receipt.setWarehouse(request.getWarehouse());
+        receipt.setRemarks(request.getRemarks());
+        receipt.setStatus("PENDING_VERIFICATION");
 
         if (po.getLineItems() != null && receipt.getDescription() != null) {
             List<POReceipt> existingReceipts = ((POReceiptRepository) repository).findByPurchaseOrder_PoId(po.getPoId());
@@ -67,10 +79,6 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
             }
         }
         
-        if (receipt.getStatus() == null) {
-            receipt.setStatus("PENDING_VERIFICATION");
-        }
-
         POReceipt saved = save(receipt);
 
         AuditLog audit = AuditLog.builder()

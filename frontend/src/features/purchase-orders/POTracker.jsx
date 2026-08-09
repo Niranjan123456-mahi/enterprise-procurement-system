@@ -74,12 +74,16 @@ function POTracker({ user }) {
     }
   }
 
-  async function handleRecordReceipt(poId, description, qty) {
+  async function handleRecordReceipt(poId, receiptData) {
     try {
       const payload = {
-        purchaseOrder: { poId: poId },
-        description: description,
-        qtyReceived: parseInt(qty),
+        poId: poId,
+        description: receiptData.description,
+        qtyReceived: parseInt(receiptData.qty),
+        damagedQty: parseInt(receiptData.damagedQty) || 0,
+        itemCondition: receiptData.condition || "Good",
+        warehouse: receiptData.warehouse || "Default",
+        remarks: receiptData.remarks || "Recorded by Requester",
         receivedDate: new Date().toISOString().slice(0, 10),
       };
 

@@ -86,8 +86,8 @@ public class POReceiptController {
     @PostMapping
     @Operation(summary = "Create PO receipt", description = "Record goods received against a PO and automatically update PO delivery status (CREATED, PARTIALLY_DELIVERED, FULLY_DELIVERED)")
     @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
-    public ResponseEntity<POReceipt> create(@Valid @RequestBody POReceipt receipt, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.saveReceipt(receipt, authentication.getName()));
+    public ResponseEntity<POReceipt> create(@Valid @RequestBody com.enterprise.procurement.dto.POReceiptCreateRequest request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.saveReceipt(request, authentication.getName()));
     }
 
     @PutMapping("/{id}")

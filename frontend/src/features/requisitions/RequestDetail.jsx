@@ -34,6 +34,38 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
   const [actioning, setActioning] = useState(false);
   const [actionError, setActionError] = useState('');
 
+  const [isCorrectingSupplier, setIsCorrectingSupplier] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [savingSupplier, setSavingSupplier] = useState(false);
+
+  async function handleStartSupplierCorrection() {
+    setIsCorrectingSupplier(true);
+    try {
+      const res = await apiFetch('/api/suppliers', {}, user.token);
+      setSuppliers(res.filter(s => s.status === 'ACTIVE'));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleSaveSupplier() {
+    if (!selectedSupplierId) return;
+    setSavingSupplier(true);
+    try {
+      const targetId = isPropMode ? propRequest.requisitionId : requisition?.requisitionId || id;
+      await apiFetch(`/api/requisitions/${targetId}/supplier`, {
+        method: 'PATCH',
+        body: JSON.stringify({ supplierId: selectedSupplierId })
+      }, user.token);
+      window.location.reload(); 
+    } catch (e) {
+      alert("Failed to update supplier: " + e.message);
+    } finally {
+      setSavingSupplier(false);
+    }
+  }
+
   async function handleAction(action) {
     if (action === 'REJECT' && !remarks.trim()) {
       setActionError('Remarks are required for rejection.');
@@ -146,7 +178,8 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
     submittedBy = requisition.createdBy?.fullName || requisition.createdBy?.username;
     rawJustification = requisition.justification || '';
     categoryName = requisition.category?.categoryName || '—';
-    supplierName = requisition.supplier?.supplierName || 'Direct';
+    const hasSupplier = requisition.supplier != null;
+    supplierName = hasSupplier ? requisition.supplier.supplierName : 'Missing';
     departmentName = requisition.department?.departmentName || '—';
     neededDate = requisition.neededBy || '—';
   }
@@ -215,7 +248,43 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
               </div>
               <div className="meta-field">
                 <span className="field-lbl">Preferred Supplier</span>
-                <span className="field-val">{supplierName}</span>
+                <span className="field-val">
+                  {supplierName === 'Missing' && user?.roles?.includes('ROLE_Admin') && displayStatus === 'PENDING_APPROVAL' ? (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                        <span style={{ color: '#ef4444', fontWeight: 600 }}>Missing</span>
+                        {!isCorrectingSupplier ? (
+                          <button 
+                            className="btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '12px', width: 'fit-content' }}
+                            onClick={handleStartSupplierCorrection}
+                          >
+                            Assign Supplier
+                          </button>
+                        ) : (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <select 
+                               value={selectedSupplierId}
+                               onChange={e => setSelectedSupplierId(e.target.value)}
+                               style={{ padding: '4px', fontSize: '12px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                            >
+                               <option value="">-- Select --</option>
+                               {suppliers.map(s => <option key={s.supplierId} value={s.supplierId}>{s.supplierName}</option>)}
+                            </select>
+                            <button 
+                              className="btn-primary" 
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                              onClick={handleSaveSupplier}
+                              disabled={savingSupplier || !selectedSupplierId}
+                            >
+                              {savingSupplier ? '...' : 'Save'}
+                            </button>
+                          </div>
+                        )}
+                     </div>
+                  ) : (
+                    supplierName
+                  )}
+                </span>
               </div>
               <div className="meta-field">
                 <span className="field-lbl">Required Date</span>

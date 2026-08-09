@@ -16,13 +16,19 @@ public class InvoiceService extends BaseService<Invoice, Long> {
 
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final UserRepository userRepository;
+    private final com.enterprise.procurement.repository.AuditLogRepository auditLogRepository;
+    private final NotificationService notificationService;
 
     public InvoiceService(InvoiceRepository repository,
                           PurchaseOrderRepository purchaseOrderRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          com.enterprise.procurement.repository.AuditLogRepository auditLogRepository,
+                          NotificationService notificationService) {
         super(repository);
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Invoice> findByStatus(String status) {
@@ -37,9 +43,51 @@ public class InvoiceService extends BaseService<Invoice, Long> {
     public Invoice uploadInvoice(Invoice invoice, Long poId) {
         PurchaseOrder po = purchaseOrderRepository.findById(poId)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found"));
+                
+        if (invoice.getAmount() == null) {
+            throw new IllegalArgumentException("Invoice amount is required.");
+        }
+        
+        java.math.BigDecimal poTotal = po.getTotalAmount();
+        if (poTotal == null) {
+            poTotal = java.math.BigDecimal.ZERO;
+            if (po.getLineItems() != null) {
+                for (com.enterprise.procurement.entity.POLineItem item : po.getLineItems()) {
+                    if (item.getUnitPrice() != null && item.getOrderedQty() != null) {
+                        poTotal = poTotal.add(item.getUnitPrice().multiply(java.math.BigDecimal.valueOf(item.getOrderedQty())));
+                    }
+                }
+            }
+        }
+        
+        if (poTotal != null && invoice.getAmount().compareTo(poTotal) > 0) {
+            System.out.println("THROWING EXCEPTION: Invoice amount " + invoice.getAmount() + " exceeds Purchase Order total amount " + poTotal);
+            throw new IllegalArgumentException("Invoice amount exceeds Purchase Order total amount.");
+        }
+        
         invoice.setPurchaseOrder(po);
         invoice.setStatus("PENDING");
-        return save(invoice);
+        Invoice saved = save(invoice);
+
+        com.enterprise.procurement.entity.AuditLog audit = com.enterprise.procurement.entity.AuditLog.builder()
+                .user(po.getRequisition().getCreatedBy())
+                .module("Invoice")
+                .action("UPLOAD")
+                .entityName("Invoice")
+                .entityId(saved.getInvoiceId())
+                .remarks("Invoice " + saved.getInvoiceNumber() + " uploaded for PO " + po.getPoNumber())
+                .build();
+        auditLogRepository.save(audit);
+
+        notificationService.createNotification(
+                po.getRequisition().getCreatedBy().getUsername(),
+                "Invoice Uploaded",
+                "Invoice " + saved.getInvoiceNumber() + " has been uploaded for your PO.",
+                "Invoice",
+                saved.getInvoiceId()
+        );
+
+        return saved;
     }
 
     @Transactional
@@ -57,6 +105,27 @@ public class InvoiceService extends BaseService<Invoice, Long> {
         } else {
             throw new IllegalArgumentException("Action must be VERIFY or REJECT");
         }
-        return save(invoice);
+        
+        Invoice saved = save(invoice);
+        
+        com.enterprise.procurement.entity.AuditLog audit = com.enterprise.procurement.entity.AuditLog.builder()
+                .user(user)
+                .module("Invoice")
+                .action(action.toUpperCase())
+                .entityName("Invoice")
+                .entityId(saved.getInvoiceId())
+                .remarks("Invoice " + saved.getInvoiceNumber() + " was " + saved.getStatus())
+                .build();
+        auditLogRepository.save(audit);
+
+        notificationService.createNotification(
+                saved.getPurchaseOrder().getRequisition().getCreatedBy().getUsername(),
+                "Invoice " + saved.getStatus(),
+                "Invoice " + saved.getInvoiceNumber() + " has been " + saved.getStatus().toLowerCase() + ".",
+                "Invoice",
+                saved.getInvoiceId()
+        );
+
+        return saved;
     }
 }
