@@ -130,6 +130,10 @@ function App() {
               element={<ProtectedRoute user={user} allowedRoles={[ADMIN]}><RoleAdmin user={user} /></ProtectedRoute>}
             />
             <Route
+              path="/users"
+              element={<ProtectedRoute user={user} allowedRoles={[ADMIN]}><UserAdmin user={user} /></ProtectedRoute>}
+            />
+            <Route
               path="/reports"
               element={<ProtectedRoute user={user} allowedRoles={[ADMIN, FINANCE]}><ReportsDashboard user={user} /></ProtectedRoute>}
             />

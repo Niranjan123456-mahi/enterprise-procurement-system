@@ -35,15 +35,18 @@ export default function UserAdmin({ user }) {
       setRoles(rRes);
       setDepartments(dRes);
     } catch (err) {
+      console.error('Failed to load users:', err);
       setError('Failed to load users');
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch-on-mount: loadData is redefined every render, so including it in
+  // the deps array below would cause this to refetch on every render.
   useEffect(() => {
     loadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleActivate = async (userId, roleId) => {
     if (!roleId) {
@@ -54,6 +57,7 @@ export default function UserAdmin({ user }) {
       await apiFetch(`/api/users/${userId}/activate?roleId=${roleId}`, { method: 'PUT' }, user.token);
       loadData();
     } catch (err) {
+      console.error('Failed to activate user:', err);
       alert('Failed to activate user.');
     }
   };
@@ -92,6 +96,7 @@ export default function UserAdmin({ user }) {
       });
       loadData();
     } catch (err) {
+      console.error('Failed to create user:', err);
       alert("Failed to create user");
     }
   };
@@ -102,6 +107,7 @@ export default function UserAdmin({ user }) {
       <p style={{ color: 'var(--color-gray-dark)', marginBottom: '24px' }}>Approve pending sign-ups and manage roles.</p>
       
       {error && <div style={{ color: 'red', marginBottom: '16px' }}>{error}</div>}
+      {loading && <div style={{ color: 'var(--color-gray-dark)', marginBottom: '16px' }}>Loading users...</div>}
 
       <div style={{ marginBottom: '24px' }}>
         <button className="btn-enterprise primary" onClick={() => setShowForm(!showForm)}>

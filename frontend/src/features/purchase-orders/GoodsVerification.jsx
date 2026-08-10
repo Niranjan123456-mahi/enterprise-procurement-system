@@ -12,15 +12,17 @@ export default function GoodsVerification({ user }) {
       const data = await apiFetch('/api/po-receipts', {}, user.token);
       setReceipts(data);
     } catch (err) {
+      console.error('Failed to load receipts:', err);
       setError('Failed to load receipts.');
     } finally {
       setLoading(false);
     }
   };
 
+  // loadReceipts is redefined every render; only re-fetch when the token changes.
   useEffect(() => {
     loadReceipts();
-  }, [user.token]);
+  }, [user.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleVerify = async (receiptId, status) => {
     try {
@@ -36,6 +38,7 @@ export default function GoodsVerification({ user }) {
       alert(`Receipt ${status} successfully!`);
       loadReceipts();
     } catch (err) {
+      console.error('Failed to update receipt status:', err);
       alert('Failed to update receipt status.');
     }
   };

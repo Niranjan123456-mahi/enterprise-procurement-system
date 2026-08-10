@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../api";
-import { Check, UploadCloud, Download, DollarSign } from "lucide-react";
+import { UploadCloud, DollarSign } from "lucide-react";
 
 export default function FinancePayments({ user }) {
   const [invoices, setInvoices] = useState([]);
@@ -21,9 +21,10 @@ export default function FinancePayments({ user }) {
     taxAmount: "",
   });
 
+  // loadData is redefined every render; only re-fetch when the token changes.
   useEffect(() => {
     loadData();
-  }, [user.token]);
+  }, [user.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     setLoading(true);
@@ -69,6 +70,7 @@ export default function FinancePayments({ user }) {
       loadData();
       alert("Payment processed successfully.");
     } catch (err) {
+      console.error("Payment processing failed:", err);
       alert("Failed to process payment.");
     }
   }
@@ -92,6 +94,14 @@ export default function FinancePayments({ user }) {
     } catch {
       alert("Failed to upload invoice.");
     }
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: "24px", textAlign: "center", color: "#6b7280" }}>
+        Loading financial data...
+      </div>
+    );
   }
 
   return (

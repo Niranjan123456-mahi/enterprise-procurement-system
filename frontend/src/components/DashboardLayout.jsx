@@ -18,8 +18,7 @@ import {
   LogOut,
   Calendar,
   UserCheck,
-  Search,
-  User
+  Search
 } from 'lucide-react';
 import { CANONICAL_ROLES } from '../utils/roles';
 import { apiFetch } from '../api';
@@ -48,11 +47,14 @@ export default function DashboardLayout({ user, onLogout, children }) {
     }
   };
 
+  // loadNotifications is redefined every render; adding it to the deps array
+  // would restart the 30s poll interval on every render instead of once per
+  // token change.
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000); // poll every 30s
     return () => clearInterval(interval);
-  }, [user?.token]);
+  }, [user?.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const profileRef = useRef(null);
   const notifyRef = useRef(null);
@@ -433,14 +435,5 @@ export default function DashboardLayout({ user, onLogout, children }) {
         </div>
       )}
     </div>
-  );
-}
-// Add custom Clock icon mapping if not imported
-function Clock({ size, className }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="12 6 12 12 16 14"></polyline>
-    </svg>
   );
 }

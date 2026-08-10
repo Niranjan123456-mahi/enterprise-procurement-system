@@ -41,9 +41,28 @@ public class RequisitionController {
         return ResponseEntity.ok(service.findMyRequisitions(authentication.getName()));
     }
 
+    // SECURITY FIX: previously had no access control at all — any logged-in
+    // user could view any requisition's full details just by guessing or
+    // incrementing the ID, regardless of who created it or which department
+    // it belongs to. Now: Admin/Finance/Manager can view anything; a
+    // Requester can only view requisitions they created themselves.
     @GetMapping("/{id}")
-    public ResponseEntity<Requisition> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    public ResponseEntity<Requisition> getById(@PathVariable Long id, Authentication authentication) {
+        Requisition requisition = service.findById(id);
+
+        boolean canViewAll = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_Finance")
+                        || a.getAuthority().equals("ROLE_Manager"));
+
+        boolean ownsIt = requisition.getCreatedBy() != null
+                && authentication.getName().equals(requisition.getCreatedBy().getUsername());
+
+        if (!canViewAll && !ownsIt) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(requisition);
     }
 
     @GetMapping("/pending")
@@ -59,8 +78,25 @@ public class RequisitionController {
                 .body(service.create(request, authentication.getName()));
     }
 
+    // SECURITY FIX: same issue as getById() above — previously anyone could
+    // pull the full approval timeline of any requisition by ID alone. Same
+    // ownership check applied here.
     @GetMapping("/{id}/timeline")
-    public ResponseEntity<List<TimelineEvent>> getTimeline(@PathVariable Long id) {
+    public ResponseEntity<List<TimelineEvent>> getTimeline(@PathVariable Long id, Authentication authentication) {
+        Requisition requisition = service.findById(id);
+
+        boolean canViewAll = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_Admin")
+                        || a.getAuthority().equals("ROLE_Finance")
+                        || a.getAuthority().equals("ROLE_Manager"));
+
+        boolean ownsIt = requisition.getCreatedBy() != null
+                && authentication.getName().equals(requisition.getCreatedBy().getUsername());
+
+        if (!canViewAll && !ownsIt) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         return ResponseEntity.ok(service.getRequisitionTimeline(id));
     }
 
@@ -114,8 +150,8 @@ public class RequisitionController {
 
     @PatchMapping("/{id}/supplier")
     @PreAuthorize("hasRole('Admin')")
-    public ResponseEntity<Requisition> updateSupplier(@PathVariable Long id, 
-                                                      @RequestBody java.util.Map<String, Long> payload, 
+    public ResponseEntity<Requisition> updateSupplier(@PathVariable Long id,
+                                                      @RequestBody java.util.Map<String, Long> payload,
                                                       Authentication authentication) {
         Long supplierId = payload.get("supplierId");
         if (supplierId == null) {
