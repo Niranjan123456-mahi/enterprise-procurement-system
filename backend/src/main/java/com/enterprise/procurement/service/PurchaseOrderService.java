@@ -28,6 +28,11 @@ public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
         this.notificationService = notificationService;
     }
 
+    @Override
+    public List<PurchaseOrder> findAll() {
+        return ((PurchaseOrderRepository) repository).findAllByOrderByCreatedAtDesc();
+    }
+
     @Transactional
     public PurchaseOrder createFromRequisition(Requisition requisition) {
         if (requisition.getSupplier() == null) {

@@ -376,8 +376,23 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<Requisition> findAll() {
+        return ((RequisitionRepository) repository).findAllByOrderByCreatedAtDesc();
+    }
+
     public List<Requisition> findMyApprovals(String username) {
-        return requisitionHistoryRepository.findByActionBy_Username(username).stream()
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+        
+        boolean isAdmin = user.getUserRoles().stream()
+                .anyMatch(ur -> "Admin".equals(ur.getRole().getRoleName()));
+                
+        if (isAdmin) {
+            return findAll();
+        }
+
+        return requisitionHistoryRepository.findByActionBy_UsernameOrderByActionDateDesc(username).stream()
                 .map(RequisitionHistory::getRequisition)
                 .distinct()
                 .collect(Collectors.toList());

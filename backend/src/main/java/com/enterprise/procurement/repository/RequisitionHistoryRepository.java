@@ -11,7 +11,7 @@ public interface RequisitionHistoryRepository extends JpaRepository<RequisitionH
 
     List<RequisitionHistory> findByRequisition(Requisition requisition);
 
-    List<RequisitionHistory> findByActionBy_Username(String username);
+    List<RequisitionHistory> findByActionBy_UsernameOrderByActionDateDesc(String username);
 
     long countByRequisition_RequisitionIdAndStep(Long requisitionId, String step);
 

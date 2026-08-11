@@ -18,7 +18,7 @@ export default function EnterpriseTable({
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState(null);
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   // Search, Filter, and Column Toggle states
   const [searchTerm, setSearchTerm] = useState('');

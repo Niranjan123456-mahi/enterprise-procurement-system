@@ -237,7 +237,7 @@ function ApprovalDashboard({ user }) {
             <div className="approval-empty-state">
               <ClipboardList size={48} style={{ color: '#d1d5db', marginBottom: '16px' }} />
               <h3>{activeTab === 'pending' ? "All Caught Up!" : "No History Found"}</h3>
-              <p>{activeTab === 'pending' ? "No requisitions are pending your signature review at this time." : "You have not actioned any requisitions yet."}</p>
+              <p>{activeTab === 'pending' ? "No requisitions are pending your signature review at this time." : "There are no historical records for this view."}</p>
             </div>
           ) : (
             <div className="approval-cards-grid">
