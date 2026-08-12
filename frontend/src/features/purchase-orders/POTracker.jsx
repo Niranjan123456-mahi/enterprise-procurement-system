@@ -118,6 +118,7 @@ function POTracker({ user }) {
         await loadOrderDetail(updatedPo);
       }
     } catch (err) {
+      console.error("Failed to update PO status:", err);
       alert("Failed to update status.");
     }
   }

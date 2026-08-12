@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const STATUS_LABELS = {
   PENDING_APPROVAL: 'Pending Approval',
   APPROVED: 'Approved',

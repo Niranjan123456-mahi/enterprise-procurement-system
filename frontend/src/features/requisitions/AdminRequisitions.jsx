@@ -15,6 +15,7 @@ export default function AdminRequisitions({ user }) {
         const data = await apiFetch("/api/requisitions", {}, user.token);
         setRequisitions(data);
       } catch (err) {
+        console.error("Failed to load requisitions:", err);
         setError("Failed to load requisitions.");
       } finally {
         setLoading(false);
