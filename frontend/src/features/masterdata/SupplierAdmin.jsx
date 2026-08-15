@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./SupplierAdmin.css";
 
-function SupplierAdmin({ user }) {
+export default function SupplierAdmin({ user }) {
+  const location = useLocation();
   const [suppliers, setSuppliers] = useState([]);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -28,7 +30,7 @@ function SupplierAdmin({ user }) {
       }
     }
     loadSuppliers();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function addSupplier() {
     if (name.trim() === "") {
@@ -149,5 +151,4 @@ function SupplierAdmin({ user }) {
     </div>
   );
 }
-
-export default SupplierAdmin;
+

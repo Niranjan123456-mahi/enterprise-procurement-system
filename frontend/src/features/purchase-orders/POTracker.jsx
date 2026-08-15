@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./POTracker.css";
 import PODetail from "./PODetail";
 import EnterpriseTable from "../../components/EnterpriseTable";
 
 function POTracker({ user }) {
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -22,7 +24,7 @@ function POTracker({ user }) {
       }
     }
     loadOrders();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');

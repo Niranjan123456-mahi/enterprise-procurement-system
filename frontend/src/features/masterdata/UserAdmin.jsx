@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from "react-router-dom";
+import { Mail, Shield, AlertCircle, CheckCircle, Search, Edit2, Key, Users } from 'lucide-react';
 import { apiFetch } from '../../api';
 
 export default function UserAdmin({ user }) {
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,7 +49,7 @@ export default function UserAdmin({ user }) {
   // the deps array below would cause this to refetch on every render.
   useEffect(() => {
     loadData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user.token, location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleActivate = async (userId, roleId) => {
     if (!roleId) {

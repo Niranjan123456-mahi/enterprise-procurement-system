@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./Catalog.css";
 
-function Catalog({ user }) {
+export default function Catalog({ user }) {
+  const location = useLocation();
   const [categories, setCategories] = useState([]);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -20,7 +22,7 @@ function Catalog({ user }) {
       }
     }
     loadCategories();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function addCategory() {
     if (name.trim() === "" || code.trim() === "") {
@@ -158,5 +160,4 @@ function Catalog({ user }) {
     </div>
   );
 }
-
-export default Catalog;
+

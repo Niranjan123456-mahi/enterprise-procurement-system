@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import { UploadCloud, DollarSign } from "lucide-react";
 
 export default function FinancePayments({ user }) {
+  const location = useLocation();
   const [invoices, setInvoices] = useState([]);
   const [payments, setPayments] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -24,7 +26,7 @@ export default function FinancePayments({ user }) {
   // loadData is redefined every render; only re-fetch when the token changes.
   useEffect(() => {
     loadData();
-  }, [user.token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user.token, location.key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     setLoading(true);

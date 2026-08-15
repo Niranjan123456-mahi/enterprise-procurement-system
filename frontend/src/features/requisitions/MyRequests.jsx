@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import { renderStatusBadge } from "../../utils/statusBadge";
 import EnterpriseTable from "../../components/EnterpriseTable";
@@ -6,6 +7,8 @@ import RequestDetail from "./RequestDetail";
 import "./MyRequests.css";
 
 export default function MyRequests({ user }) {
+  const location = useLocation();
+
   const [myRequests, setMyRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -27,7 +30,7 @@ export default function MyRequests({ user }) {
       }
     }
     loadRequests();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function handleRowClick(r) {
     setLoadingDetail(true);

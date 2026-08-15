@@ -200,7 +200,7 @@ export default function PODetail({ order, onRecordReceipt, onBack, onStatusChang
                             style={{ height: '28px', padding: '0 10px', fontSize: '11px', borderRadius: '4px' }}
                             onClick={() => recordReceipt(index)}
                           >
-                            Log Qty
+                            Record Receipt
                           </button>
                         </div>
                       ) : (

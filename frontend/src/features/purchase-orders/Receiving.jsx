@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import { Clock } from "lucide-react";
 import EnterpriseTable from "../../components/EnterpriseTable";
@@ -6,6 +7,7 @@ import PODetail from "./PODetail";
 import "./Receiving.css";
 
 export default function Receiving({ user }) {
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -27,7 +29,7 @@ export default function Receiving({ user }) {
       }
     }
     loadOrders();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function loadOrderDetail(po) {
     setLoadingDetail(true);

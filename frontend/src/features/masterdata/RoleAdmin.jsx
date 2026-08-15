@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./RoleAdmin.css";
 
-function RoleAdmin({ user }) {
+export default function RoleAdmin({ user }) {
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [userRoles, setUserRoles] = useState([]);
@@ -25,7 +27,7 @@ function RoleAdmin({ user }) {
       }
     }
     loadData();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function toggleRole(userId, roleId) {
     setError("");
@@ -125,5 +127,4 @@ function RoleAdmin({ user }) {
     </div>
   );
 }
-
-export default RoleAdmin;
+

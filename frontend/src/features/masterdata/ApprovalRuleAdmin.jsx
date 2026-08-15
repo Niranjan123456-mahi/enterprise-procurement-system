@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import "./ApprovalRuleAdmin.css";
 
-function ApprovalRuleAdmin({ user }) {
+export default function ApprovalRuleAdmin({ user }) {
+  const location = useLocation();
   const [rules, setRules] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -53,7 +55,7 @@ function ApprovalRuleAdmin({ user }) {
       }
     }
     loadData();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   async function addRule() {
     if (minAmount === "" || maxAmount === "" || !selectedDeptId || !selectedCatId || !step1RoleId) {
@@ -273,5 +275,4 @@ function ApprovalRuleAdmin({ user }) {
     </div>
   );
 }
-
-export default ApprovalRuleAdmin;
+

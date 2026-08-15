@@ -309,7 +309,7 @@ export default function RequisitionForm({ user }) {
                 </div>
 
                 <div className="form-group">
-                  <label>Preferred Supplier (Optional)</label>
+                  <label>Supplier *</label>
                   <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
                     <option value="">Direct / Select Supplier...</option>
                     {suppliers.map((s) => (

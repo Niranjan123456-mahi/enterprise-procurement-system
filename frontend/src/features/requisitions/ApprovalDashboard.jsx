@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import { 
   ClipboardList, 
@@ -13,6 +13,7 @@ import "./ApprovalDashboard.css";
 
 function ApprovalDashboard({ user }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'history' ? 'history' : 'pending';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -68,7 +69,12 @@ function ApprovalDashboard({ user }) {
       }
     }
     loadData();
-  }, [user.token]);
+  }, [user.token, location.key]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab') === 'history' ? 'history' : 'pending';
+    setActiveTab(tab);
+  }, [searchParams]);
 
   useEffect(() => {
     setCurrentPage(1);

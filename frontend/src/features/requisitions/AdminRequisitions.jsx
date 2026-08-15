@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "../../api";
 import { useNavigate } from "react-router-dom";
 import EnterpriseTable from "../../components/EnterpriseTable";
 
 export default function AdminRequisitions({ user }) {
+  const location = useLocation();
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,7 +24,7 @@ export default function AdminRequisitions({ user }) {
       }
     }
     loadData();
-  }, [user.token]);
+  }, [user.token, location.key]);
 
   const headers = [
     { label: "Req No", field: "requisitionNumber" },
