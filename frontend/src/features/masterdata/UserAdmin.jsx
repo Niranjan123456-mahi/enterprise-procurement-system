@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from "react-router-dom";
-import { Mail, Shield, AlertCircle, CheckCircle, Search, Edit2, Key, Users } from 'lucide-react';
 import { apiFetch } from '../../api';
 
 export default function UserAdmin({ user }) {

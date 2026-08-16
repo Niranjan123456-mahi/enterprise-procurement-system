@@ -1,3 +1,8 @@
+/* eslint-disable react-refresh/only-export-components -- this file
+   intentionally exports shared status constants/helpers alongside the
+   StatusBadge component itself; splitting it into separate files isn't
+   worth it for a single small utility file with one consumer. */
+
 export const STATUS_LABELS = {
   PENDING_APPROVAL: 'Pending Approval',
   APPROVED: 'Approved',
