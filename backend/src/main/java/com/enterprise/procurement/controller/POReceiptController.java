@@ -85,14 +85,14 @@ public class POReceiptController {
 
     @PostMapping
     @Operation(summary = "Create PO receipt", description = "Record goods received against a PO and automatically update PO delivery status (CREATED, PARTIALLY_DELIVERED, FULLY_DELIVERED)")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
+    @PreAuthorize("hasRole('Receiver')")
     public ResponseEntity<POReceipt> create(@Valid @RequestBody com.enterprise.procurement.dto.POReceiptCreateRequest request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.saveReceipt(request, authentication.getName()));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update PO receipt", description = "Update details of an existing receipt and recalculate PO delivery status")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
+    @PreAuthorize("hasRole('Receiver')")
     public ResponseEntity<POReceipt> update(@PathVariable Long id,
                                            @Valid @RequestBody POReceipt receipt) {
         return ResponseEntity.ok(service.update(id, receipt));
@@ -100,7 +100,7 @@ public class POReceiptController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete PO receipt", description = "Delete a receipt and recalculate PO delivery status")
-    @PreAuthorize("hasAnyRole('Admin', 'Receiver')")
+    @PreAuthorize("hasRole('Receiver')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

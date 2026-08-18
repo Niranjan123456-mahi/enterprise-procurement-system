@@ -98,7 +98,7 @@ function App() {
             <Route
               path="/receiving"
               element={
-                <ProtectedRoute user={user} allowedRoles={[RECEIVER, FINANCE, ADMIN]}>
+                <ProtectedRoute user={user} allowedRoles={[RECEIVER]}>
                   <Receiving user={user} />
                 </ProtectedRoute>
               }
@@ -106,7 +106,7 @@ function App() {
             <Route
               path="/verification"
               element={
-                <ProtectedRoute user={user} allowedRoles={[RECEIVER, ADMIN]}>
+                <ProtectedRoute user={user} allowedRoles={[RECEIVER]}>
                   <GoodsVerification user={user} />
                 </ProtectedRoute>
               }

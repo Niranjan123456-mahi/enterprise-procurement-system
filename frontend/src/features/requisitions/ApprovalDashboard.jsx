@@ -249,14 +249,10 @@ function ApprovalDashboard({ user }) {
             <div className="approval-cards-grid">
               {paginatedRequests.map((r) => {
                 let parsedJust = r.justification || '';
-                let project = '—';
-                let budget = '—';
                 try {
                   if (r.justification && r.justification.startsWith('{')) {
                     const parsed = JSON.parse(r.justification);
                     parsedJust = parsed.justification || '';
-                    project = parsed.projectCode || '—';
-                    budget = parsed.budgetCode || '—';
                   }
                 } catch {
                   // Fall back
@@ -313,10 +309,6 @@ function ApprovalDashboard({ user }) {
                         </div>
                       )}
 
-                      <div className="card-codes-row">
-                        <span>Project: <strong>{project}</strong></span>
-                        <span>GL Code: <strong>{budget}</strong></span>
-                      </div>
                     </div>
 
                     <div className="card-bottom-footer">

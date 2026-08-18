@@ -21,17 +21,23 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
     private final NotificationService notificationService;
+    private final RequisitionHistoryRepository requisitionHistoryRepository;
+    private final RequisitionRepository requisitionRepository;
 
     public POReceiptService(POReceiptRepository repository,
                             PurchaseOrderRepository purchaseOrderRepository,
                             UserRepository userRepository,
                             AuditLogRepository auditLogRepository,
-                            NotificationService notificationService) {
+                            NotificationService notificationService,
+                            RequisitionHistoryRepository requisitionHistoryRepository,
+                            RequisitionRepository requisitionRepository) {
         super(repository);
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.userRepository = userRepository;
         this.auditLogRepository = auditLogRepository;
         this.notificationService = notificationService;
+        this.requisitionHistoryRepository = requisitionHistoryRepository;
+        this.requisitionRepository = requisitionRepository;
     }
 
     @Transactional
@@ -187,5 +193,27 @@ public class POReceiptService extends BaseService<POReceipt, Long> {
         po.setStatus(newStatus);
         po.setStage(newStatus);
         purchaseOrderRepository.save(po);
+
+        if ("FULLY_DELIVERED".equals(newStatus)) {
+            Requisition requisition = po.getRequisition();
+            if (requisition != null && !RequisitionStatus.COMPLETED.equals(requisition.getStatus())) {
+                requisition.setStatus(RequisitionStatus.COMPLETED);
+                requisitionRepository.save(requisition);
+
+                User deliveredBy = receipts.stream()
+                        .map(POReceipt::getReceivedBy)
+                        .filter(java.util.Objects::nonNull)
+                        .reduce((first, second) -> second) // most recent receipt's receiver
+                        .orElse(requisition.getCreatedBy());
+
+                RequisitionHistory history = RequisitionHistory.builder()
+                        .requisition(requisition)
+                        .actionBy(deliveredBy)
+                        .step("Delivered")
+                        .remarks("All ordered items received and confirmed delivered.")
+                        .build();
+                requisitionHistoryRepository.save(history);
+            }
+        }
     }
 }

@@ -108,7 +108,7 @@ public class RequisitionController {
 
     @GetMapping("/preview-approval")
     public ResponseEntity<List<String>> previewApprovalChain(
-            @RequestParam Long categoryId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam java.math.BigDecimal amount,
             Authentication authentication) {
         return ResponseEntity.ok(service.getApprovalChainNames(categoryId, amount, authentication.getName()));

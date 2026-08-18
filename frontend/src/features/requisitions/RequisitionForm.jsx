@@ -27,10 +27,7 @@ export default function RequisitionForm({ user }) {
   const [priority, setPriority] = useState("MEDIUM");
   const [neededBy, setNeededBy] = useState("");
   const [justification, setJustification] = useState("");
-  const [projectCode, setProjectCode] = useState("");
-  const [budgetCode, setBudgetCode] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [attachmentName, setAttachmentName] = useState("");
   const [remarks, setRemarks] = useState("");
 
   const [approvalChain, setApprovalChain] = useState([]);
@@ -66,9 +63,10 @@ export default function RequisitionForm({ user }) {
 
   const estimatedTotal = calculateTotal();
 
-  // Dynamic preview timeline matches on Category or total Amount change
+  // Dynamic preview timeline follows total Amount only - routing no
+  // longer depends on Category, so the preview shouldn't either.
   useEffect(() => {
-    if (!categoryId || estimatedTotal <= 0) {
+    if (estimatedTotal <= 0) {
       setApprovalChain([]);
       setPreviewError("");
       return;
@@ -79,7 +77,7 @@ export default function RequisitionForm({ user }) {
       setLoadingChain(true);
       try {
         const data = await apiFetch(
-          `/api/requisitions/preview-approval?categoryId=${categoryId}&amount=${estimatedTotal}`,
+          `/api/requisitions/preview-approval?amount=${estimatedTotal}`,
           {},
           user.token
         );
@@ -91,7 +89,7 @@ export default function RequisitionForm({ user }) {
         console.error("Failed to load approval chain preview", err);
         if (isMounted) {
           setApprovalChain([]);
-          setPreviewError("No approval rule found for this Department, Category, and Amount.");
+          setPreviewError("Unable to load the approval routing preview.");
         }
       } finally {
         if (isMounted) {
@@ -132,12 +130,6 @@ export default function RequisitionForm({ user }) {
     );
   }
 
-  const handleAttachmentChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setAttachmentName(e.target.files[0].name);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -162,10 +154,7 @@ export default function RequisitionForm({ user }) {
       // Serialize structured enterprise fields inside the justification column
       const structuredJustification = JSON.stringify({
         justification,
-        projectCode,
-        budgetCode,
         deliveryAddress,
-        attachmentName,
         remarks,
       });
 
@@ -201,10 +190,7 @@ export default function RequisitionForm({ user }) {
       setPriority("MEDIUM");
       setNeededBy("");
       setJustification("");
-      setProjectCode("");
-      setBudgetCode("");
       setDeliveryAddress("");
-      setAttachmentName("");
       setRemarks("");
       setLines([{ description: "", quantity: 1, unitPrice: 0 }]);
       
@@ -355,28 +341,6 @@ export default function RequisitionForm({ user }) {
             <div className="form-card animate-fade">
               <h3>2. Cost Allocations & Logistics</h3>
               
-              <div className="form-row-split">
-                <div className="form-group">
-                  <label>Project Cost Code</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. PRJ-2026-ENG"
-                    value={projectCode}
-                    onChange={(e) => setProjectCode(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>GL Budget Code</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. GL-5400-IT"
-                    value={budgetCode}
-                    onChange={(e) => setBudgetCode(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="form-group" style={{ marginTop: "12px", marginBottom: "12px" }}>
                 <label>Delivery Address / Warehouse Dock</label>
                 <textarea
@@ -397,27 +361,15 @@ export default function RequisitionForm({ user }) {
                 />
               </div>
 
-              <div className="form-row-split" style={{ marginTop: "12px" }}>
-                <div className="form-group">
-                  <label>Quote / SLA Attachment (PDF/Image)</label>
-                  <div className="file-input-wrapper">
-                    <input type="file" id="fileQuote" onChange={handleAttachmentChange} style={{ display: "none" }} />
-                    <label htmlFor="fileQuote" className="btn-file-select" style={{ height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {attachmentName ? "Attached: " + attachmentName : "Attach Quote Document..."}
-                    </label>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Internal Remarks / Notes</label>
-                  <input
-                    type="text"
-                    placeholder="Additional logistics notes..."
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    style={{ height: '44px' }}
-                  />
-                </div>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <label>Internal Remarks / Notes</label>
+                <input
+                  type="text"
+                  placeholder="Additional logistics notes..."
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  style={{ height: '44px' }}
+                />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px' }}>
@@ -573,7 +525,7 @@ export default function RequisitionForm({ user }) {
               </div>
             ) : approvalChain.length === 0 ? (
               <div className="preview-state-message empty">
-                <p>Select a Category and add requested items to display the approval sequence timeline.</p>
+                <p>Add requested items to display the approval sequence timeline.</p>
               </div>
             ) : (
               <div className="preview-timeline-wrapper">

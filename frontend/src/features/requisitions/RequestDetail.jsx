@@ -351,14 +351,6 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
           <div className="detail-card">
             <h3>Logistics & Financial Allocations</h3>
             <div className="meta-details-grid">
-              <div className="meta-field">
-                <span className="field-lbl">Cost Center / Project Code</span>
-                <span className="field-val">{projectCode}</span>
-              </div>
-              <div className="meta-field">
-                <span className="field-lbl">GL Budget Code</span>
-                <span className="field-val">{budgetCode}</span>
-              </div>
               <div className="meta-field col-span-2">
                 <span className="field-lbl">Warehouse Delivery Address</span>
                 <span className="field-val">{deliveryAddress}</span>
