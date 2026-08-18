@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict BzDSFYGEaJ0UXEpr1HYea1q242bdLCFD0nhjMdSsVmBx7VjFLDZ4rk2dIVqkXWL
-
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
 
@@ -1962,6 +1960,4 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict BzDSFYGEaJ0UXEpr1HYea1q242bdLCFD0nhjMdSsVmBx7VjFLDZ4rk2dIVqkXWL
 

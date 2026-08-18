@@ -25,8 +25,11 @@ public class RequisitionCreateRequest {
     @NotNull(message = "Category is required")
     private Long categoryId;
 
-    @NotNull(message = "Supplier is required")
     private Long supplierId;
+
+    private String supplierName;
+
+    private String supplier;
 
     private String priority;
 

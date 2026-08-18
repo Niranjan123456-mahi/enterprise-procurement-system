@@ -151,6 +151,7 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
     displayId = propRequest.id;
     displayTitle = propRequest.title;
     displayStatus = propRequest.status;
+    supplierName = propRequest.supplierName || propRequest.supplier?.supplierName || 'Direct';
     displayLineItems = (propRequest.items || []).map((item, idx) => ({
       lineItemId: idx,
       description: item.description,
@@ -178,8 +179,7 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
     submittedBy = requisition.createdBy?.fullName || requisition.createdBy?.username;
     rawJustification = requisition.justification || '';
     categoryName = requisition.category?.categoryName || '—';
-    const hasSupplier = requisition.supplier != null;
-    supplierName = hasSupplier ? requisition.supplier.supplierName : 'Missing';
+    supplierName = requisition.supplierName || (requisition.supplier ? requisition.supplier.supplierName : 'Direct');
     departmentName = requisition.department?.departmentName || '—';
     neededDate = requisition.neededBy || '—';
   }
@@ -201,6 +201,9 @@ export default function RequestDetail({ request: propRequest, onBack, user }) {
       deliveryAddress = parsed.deliveryAddress || '—';
       attachmentName = parsed.attachmentName || '';
       internalRemarks = parsed.remarks || '—';
+      if (parsed.supplierName && (!supplierName || supplierName === 'Direct' || supplierName === 'Missing')) {
+        supplierName = parsed.supplierName;
+      }
     }
   } catch {
     // Treat as raw text

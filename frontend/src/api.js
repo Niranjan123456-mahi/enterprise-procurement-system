@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Create a base Axios instance
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api', // Replace with your actual Spring Boot backend URL
+  baseURL: 'http://localhost:8081/api', // Replace with your actual Spring Boot backend URL
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,7 +13,7 @@ apiClient.interceptors.request.use(
   (config) => {
     // Retrieve the token from secure storage
     const token = localStorage.getItem('token');
-    
+
     // If the token exists, attach it to the Authorization header
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -41,9 +41,9 @@ apiClient.interceptors.response.use(
 
 // 4. Lightweight fetch-based helper used by feature components.
 // Contract: apiFetch(path, fetchOptions, token) -> parsed JSON body.
-// `path` is expected to already include the leading "/api/..." segment,
-// so the base here intentionally omits "/api" (unlike apiClient above).
-const API_BASE_URL = 'http://localhost:8080';
+// `path` is expected to include the leading "/api/..." segment,
+// so the base URL is just the server host (no /api suffix).
+const API_BASE_URL = 'http://localhost:8081';
 
 export async function apiFetch(path, options = {}, token) {
   const { headers, ...restOptions } = options;

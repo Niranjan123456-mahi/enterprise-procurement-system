@@ -21,6 +21,7 @@ export default function Login({ onLogin }) {
   };
 
   const handleLogin = async (e) => {
+    console.log("LOGIN BUTTON CLICKED");
     e.preventDefault();
     setError('');
     setLoading(true);

@@ -25,6 +25,12 @@ public class DepartmentController {
         return ResponseEntity.ok(service.findAll());
     }
 
+    // Public endpoint: used by SignUp page before the user has a JWT token.
+    @GetMapping("/public")
+    public ResponseEntity<List<Department>> getAllPublic() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Department> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.findById(id));

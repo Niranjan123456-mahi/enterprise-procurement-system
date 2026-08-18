@@ -4,8 +4,10 @@ import com.enterprise.procurement.entity.POLineItem;
 import com.enterprise.procurement.entity.PurchaseOrder;
 import com.enterprise.procurement.entity.Requisition;
 import com.enterprise.procurement.entity.RequisitionStatus;
+import com.enterprise.procurement.entity.Supplier;
 import com.enterprise.procurement.repository.PurchaseOrderRepository;
 import com.enterprise.procurement.repository.RequisitionRepository;
+import com.enterprise.procurement.repository.SupplierRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +19,16 @@ import java.util.stream.Collectors;
 public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
 
     private final RequisitionRepository requisitionRepository;
+    private final SupplierRepository supplierRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
 
     public PurchaseOrderService(PurchaseOrderRepository repository, RequisitionRepository requisitionRepository,
+                                SupplierRepository supplierRepository,
                                 AuditLogService auditLogService, NotificationService notificationService) {
         super(repository);
         this.requisitionRepository = requisitionRepository;
+        this.supplierRepository = supplierRepository;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
     }
@@ -35,7 +40,14 @@ public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
 
     @Transactional
     public PurchaseOrder createFromRequisition(Requisition requisition) {
-        if (requisition.getSupplier() == null) {
+        Supplier supplier = requisition.getSupplier();
+        if (supplier == null) {
+            supplier = supplierRepository.findAll().stream().findFirst().orElse(null);
+        }
+
+        String effectiveSupplierName = requisition.getSupplierName() != null ? requisition.getSupplierName() : (supplier != null ? supplier.getSupplierName() : null);
+
+        if (supplier == null && (effectiveSupplierName == null || effectiveSupplierName.isBlank())) {
             throw new IllegalArgumentException("Cannot generate Purchase Order: Requisition is missing a supplier.");
         }
 
@@ -47,7 +59,8 @@ public class PurchaseOrderService extends BaseService<PurchaseOrder, Long> {
         PurchaseOrder po = PurchaseOrder.builder()
                 .poNumber(poNumber)
                 .requisition(requisition)
-                .supplier(requisition.getSupplier())
+                .supplier(supplier)
+                .supplierName(effectiveSupplierName)
                 .totalAmount(reqAmt.add(taxAmt))
                 .taxAmount(taxAmt)
                 .deliveryDate(LocalDate.now().plusDays(14)) // default ETA 14 days

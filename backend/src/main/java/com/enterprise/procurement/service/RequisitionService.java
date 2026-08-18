@@ -122,9 +122,31 @@ public class RequisitionService extends BaseService<Requisition, Long> {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id " + request.getCategoryId()));
 
         Supplier supplier = null;
+        String effectiveSupplierName = request.getSupplierName();
+        if (effectiveSupplierName == null || effectiveSupplierName.isBlank()) {
+            effectiveSupplierName = request.getSupplier();
+        }
+
         if (request.getSupplierId() != null) {
-            supplier = supplierRepository.findById(request.getSupplierId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id " + request.getSupplierId()));
+            supplier = supplierRepository.findById(request.getSupplierId()).orElse(null);
+            if (supplier != null && (effectiveSupplierName == null || effectiveSupplierName.isBlank())) {
+                effectiveSupplierName = supplier.getSupplierName();
+            }
+        }
+
+        if (supplier == null && effectiveSupplierName != null && !effectiveSupplierName.isBlank()) {
+            final String lookupName = effectiveSupplierName.trim();
+            Optional<Supplier> matched = supplierRepository.findAll().stream()
+                    .filter(s -> s.getSupplierName().equalsIgnoreCase(lookupName))
+                    .findFirst();
+            if (matched.isPresent()) {
+                supplier = matched.get();
+                effectiveSupplierName = supplier.getSupplierName();
+            }
+        }
+
+        if ((effectiveSupplierName == null || effectiveSupplierName.isBlank()) && supplier == null) {
+            throw new BadRequestException("Supplier is required");
         }
 
         BigDecimal totalAmount = calculateTotalAmount(request.getItems());
@@ -134,6 +156,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
         requisition.setCreatedBy(user);
         requisition.setDepartment(department);
         requisition.setSupplier(supplier);
+        requisition.setSupplierName(effectiveSupplierName != null && !effectiveSupplierName.isBlank() ? effectiveSupplierName.trim() : (supplier != null ? supplier.getSupplierName() : null));
         requisition.setCategory(category);
         requisition.setTitle(request.getTitle());
         requisition.setJustification(request.getJustification());
@@ -273,6 +296,7 @@ public class RequisitionService extends BaseService<Requisition, Long> {
             .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
             
         requisition.setSupplier(supplier);
+        requisition.setSupplierName(supplier.getSupplierName());
         
         User admin = userRepository.findByUsername(adminUsername)
             .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));

@@ -60,7 +60,7 @@ export default function Receiving({ user }) {
       setSelectedOrder({
         poId: po.poId,
         id: po.poNumber,
-        vendor: po.supplier?.supplierName || "—",
+        vendor: po.supplierName || po.requisition?.supplierName || po.supplier?.supplierName || "—",
         created: po.createdDate,
         total: po.requisition?.totalAmount || 0,
         stage: po.stage,
@@ -122,7 +122,11 @@ export default function Receiving({ user }) {
 
   const tableHeaders = [
     { label: "PO Number", field: "poNumber" },
-    { label: "Vendor Partner", field: "supplier.supplierName" },
+    { 
+      label: "Vendor Partner", 
+      field: "vendor",
+      render: (row) => row.supplierName || row.requisition?.supplierName || row.supplier?.supplierName || "—"
+    },
     { label: "Date Issued", field: "createdDate" },
     { 
       label: "Order Total", 

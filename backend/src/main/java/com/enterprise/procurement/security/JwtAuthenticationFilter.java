@@ -28,9 +28,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        // 1. Always bypass CORS preflight OPTIONS requests
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         String path = request.getServletPath();
-        return path.startsWith("/api/auth/")
-                || path.equals("/api/auth")
+        String uri = request.getRequestURI();
+
+        // 2. Check path matching against both stripped and full URIs
+        return path.startsWith("/auth/")
+                || path.startsWith("/api/auth/")
+                || uri.contains("/auth/")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
                 || path.equals("/swagger-ui.html");

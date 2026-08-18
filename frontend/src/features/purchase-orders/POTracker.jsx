@@ -62,7 +62,7 @@ function POTracker({ user }) {
       setSelectedOrder({
         poId: po.poId,
         id: po.poNumber,
-        vendor: po.supplier?.supplierName || "—",
+        vendor: po.supplierName || po.requisition?.supplierName || po.supplier?.supplierName || "—",
         created: po.createdDate,
         total: po.requisition?.totalAmount || 0,
         stage: po.stage,
@@ -78,33 +78,21 @@ function POTracker({ user }) {
 
   async function handleRecordReceipt(poId, receiptData) {
     try {
-      const payload = {
-        poId: poId,
-        description: receiptData.description,
-        qtyReceived: parseInt(receiptData.qty),
-        damagedQty: parseInt(receiptData.damagedQty) || 0,
-        itemCondition: receiptData.condition || "Good",
-        warehouse: receiptData.warehouse || "Default",
-        remarks: receiptData.remarks || "Recorded by Requester",
-        receivedDate: new Date().toISOString().slice(0, 10),
-      };
-
-      await apiFetch(
-        "/api/po-receipts",
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        },
-        user.token
-      );
-
-      // reload PO details
-      const poObj = orders.find((o) => o.poId === poId);
-      if (poObj) {
-        await loadOrderDetail(poObj);
+      await apiFetch(`/api/po-receipts/${poId}`, {
+        method: "POST",
+        body: JSON.stringify(receiptData)
+      }, user.token);
+      
+      const updatedList = await apiFetch("/api/purchase-orders", {}, user.token);
+      setOrders(updatedList);
+      
+      const updatedPo = updatedList.find(p => p.poId === poId);
+      if (updatedPo) {
+        await loadOrderDetail(updatedPo);
       }
     } catch (err) {
-      alert(err.message || "Failed to record receipt.");
+      console.error("Failed to record receipt:", err);
+      alert("Failed to record receipt.");
     }
   }
 
@@ -115,7 +103,7 @@ function POTracker({ user }) {
       const updatedList = await apiFetch("/api/purchase-orders", {}, user.token);
       setOrders(updatedList);
       
-      const updatedPo = updatedList.find(o => o.poId === poId);
+      const updatedPo = updatedList.find(p => p.poId === poId);
       if (updatedPo) {
         await loadOrderDetail(updatedPo);
       }
@@ -139,7 +127,11 @@ function POTracker({ user }) {
 
   const headers = [
     { field: 'poNumber', label: 'PO #' },
-    { field: 'supplier.supplierName', label: 'Vendor' },
+    { 
+      field: 'vendor', 
+      label: 'Vendor', 
+      render: (row) => row.supplierName || row.requisition?.supplierName || row.supplier?.supplierName || '—' 
+    },
     { field: 'createdDate', label: 'Created' },
     {
       field: 'total',

@@ -249,14 +249,25 @@ function ApprovalDashboard({ user }) {
             <div className="approval-cards-grid">
               {paginatedRequests.map((r) => {
                 let parsedJust = r.justification || '';
+
+                let project = '—';
+                let budget = '—';
+                let customSupplier = '';
+
                 try {
                   if (r.justification && r.justification.startsWith('{')) {
                     const parsed = JSON.parse(r.justification);
                     parsedJust = parsed.justification || '';
+
+                    project = parsed.projectCode || '—';
+                    budget = parsed.budgetCode || '—';
+                    customSupplier = parsed.supplierName || '';
                   }
                 } catch {
                   // Fall back
                 }
+
+                const displaySupplier = r.supplierName || customSupplier || r.supplier?.supplierName || 'Direct';
 
                 return (
                   <div key={r.requisitionId} className="approval-card">
@@ -285,10 +296,6 @@ function ApprovalDashboard({ user }) {
 
                       <div className="card-metadata-grid">
                         <div className="meta-item">
-                          <span className="lbl">Requester</span>
-                          <span className="val">👤 {r.createdBy?.username}</span>
-                        </div>
-                        <div className="meta-item">
                           <span className="lbl">Department</span>
                           <span className="val"><Building2 size={13} /> {r.department?.departmentName || '—'}</span>
                         </div>
@@ -298,7 +305,7 @@ function ApprovalDashboard({ user }) {
                         </div>
                         <div className="meta-item">
                           <span className="lbl">Supplier</span>
-                          <span className="val"><Truck size={13} /> {r.supplier?.supplierName || 'Direct'}</span>
+                          <span className="val"><Truck size={13} /> {displaySupplier}</span>
                         </div>
                       </div>
 

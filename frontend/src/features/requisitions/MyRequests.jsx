@@ -65,6 +65,15 @@ export default function MyRequests({ user }) {
         status: r.status,
         items: filteredItems,
         history: filteredHistory,
+        supplierName: r.supplierName || r.supplier?.supplierName,
+        supplier: r.supplier,
+        justification: r.justification,
+        category: r.category,
+        department: r.department,
+        neededBy: r.neededBy,
+        createdAt: r.createdAt,
+        createdBy: r.createdBy,
+        priority: r.priority,
       });
     } catch {
       alert("Failed to load request details.");

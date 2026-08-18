@@ -36,6 +36,9 @@ public class PurchaseOrder {
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
+    @Column(name = "supplier_name")
+    private String supplierName;
+
     @Column(name = "total_amount", precision = 12, scale = 2)
     private java.math.BigDecimal totalAmount;
 

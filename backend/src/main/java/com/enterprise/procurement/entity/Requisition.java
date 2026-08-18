@@ -41,6 +41,9 @@ public class Requisition {
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 
+    @Column(name = "supplier_name")
+    private String supplierName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
